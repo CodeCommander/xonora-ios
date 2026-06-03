@@ -24,19 +24,7 @@ struct TrackRow: View {
                 // Track number or playing indicator (before artwork if numberFirst is true)
                 if numberFirst, let index = index {
                     if isPlaying {
-                        if #available(iOS 17.0, *) {
-                            Image(systemName: "waveform")
-                                .font(.caption)
-                                .foregroundColor(.accentColor)
-                                .frame(width: 24)
-                                .symbolEffect(.variableColor.iterative)
-                        } else {
-                            // Fallback on earlier versions
-                            Image(systemName: "waveform")
-                                .font(.caption)
-                                .foregroundColor(.accentColor)
-                                .frame(width: 24)
-                        }
+                        NowPlayingBars()
                     } else {
                         Text("\(index)")
                             .font(.subheadline)
@@ -63,19 +51,7 @@ struct TrackRow: View {
                 // Track number or playing indicator (after artwork if numberFirst is false)
                 if !numberFirst, let index = index {
                     if isPlaying {
-                        if #available(iOS 17.0, *) {
-                            Image(systemName: "waveform")
-                                .font(.caption)
-                                .foregroundColor(.accentColor)
-                                .frame(width: 24)
-                                .symbolEffect(.variableColor.iterative)
-                        } else {
-                            // Fallback on earlier versions
-                            Image(systemName: "waveform")
-                                .font(.caption)
-                                .foregroundColor(.accentColor)
-                                .frame(width: 24)
-                        }
+                        NowPlayingBars()
                     } else {
                         Text("\(index)")
                             .font(.subheadline)
@@ -267,6 +243,42 @@ struct TrackRow: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Now Playing Bars
+
+/// Animated equalizer-style indicator for the currently playing row. Four capsules
+/// bounce out of phase, anchored to a common baseline — reads as "audio playing"
+/// far better than a pulsing waveform glyph, and works on all supported iOS versions.
+struct NowPlayingBars: View {
+    var color: Color = .accentColor
+
+    @State private var animating = false
+
+    // Per-bar peak heights and durations; mismatched durations + staggered start
+    // delays keep the bars from bouncing in unison.
+    private let peakHeights: [CGFloat] = [7, 14, 9, 12]
+    private let durations: [Double] = [0.46, 0.55, 0.40, 0.50]
+    private let restHeight: CGFloat = 3
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: 2) {
+            ForEach(0..<peakHeights.count, id: \.self) { index in
+                Capsule(style: .continuous)
+                    .fill(color)
+                    .frame(width: 2.5, height: animating ? peakHeights[index] : restHeight)
+                    .animation(
+                        .easeInOut(duration: durations[index])
+                            .repeatForever(autoreverses: true)
+                            .delay(Double(index) * 0.1),
+                        value: animating
+                    )
+            }
+        }
+        .frame(width: 24, height: 16)
+        .onAppear { animating = true }
+        .accessibilityLabel("Now playing")
     }
 }
 
