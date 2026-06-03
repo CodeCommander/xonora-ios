@@ -468,53 +468,145 @@ struct ArtistsListView: View {
 
 struct RecentlyPlayedCard: View {
     let item: RecentlyPlayedItem
-    @ObservedObject private var playerManager = PlayerManager.shared
+
+    /// Containers (album/playlist/artist) open their detail screen on tap; a bare
+    /// track has no detail screen, so it plays immediately. The play badge below
+    /// only appears on the items that play, so the tap affordance is unambiguous.
+    private var opensDetail: Bool {
+        ["album", "playlist", "artist"].contains(item.mediaType)
+    }
 
     var body: some View {
-        Button {
-            playItem()
-        } label: {
-            VStack(alignment: .leading, spacing: 6) {
-                // Artwork
-                ZStack(alignment: .bottomTrailing) {
-                    CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: item.imageUrl, size: .small)) {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.gray.opacity(0.3))
-                            .overlay {
-                                Image(systemName: iconForMediaType)
-                                    .font(.title2)
-                                    .foregroundColor(.gray)
-                            }
-                    }
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 120, height: 120)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+        if opensDetail {
+            NavigationLink {
+                detailDestination
+            } label: {
+                cardContent
+            }
+            .buttonStyle(.plain)
+        } else {
+            Button {
+                playItem()
+            } label: {
+                cardContent
+            }
+            .buttonStyle(.plain)
+        }
+    }
 
-                    // Media type badge
-                    mediaTypeBadge
+    private var cardContent: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            // Artwork
+            ZStack(alignment: .bottomTrailing) {
+                CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: item.imageUrl, size: .small)) {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.gray.opacity(0.3))
+                        .overlay {
+                            Image(systemName: iconForMediaType)
+                                .font(.title2)
+                                .foregroundColor(.gray)
+                        }
+                }
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 120, height: 120)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+
+                // Play affordance — only on items that play immediately on tap
+                if !opensDetail {
+                    playBadge
                         .padding(6)
                 }
-
-                // Title and artist
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(item.name)
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .lineLimit(1)
-                        .foregroundColor(.primary)
-
-                    if let artist = item.artist {
-                        Text(artist)
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
-                    }
-                }
-                .frame(width: 120, alignment: .leading)
             }
+
+            // Title and artist
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.name)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .lineLimit(1)
+                    .foregroundColor(.primary)
+
+                if let artist = item.artist {
+                    Text(artist)
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            .frame(width: 120, alignment: .leading)
         }
-        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var detailDestination: some View {
+        switch item.mediaType {
+        case "album":
+            AlbumDetailView(album: stubAlbum)
+        case "playlist":
+            PlaylistDetailView(playlist: stubPlaylist)
+        case "artist":
+            ArtistDetailView(artist: stubArtist)
+        default:
+            EmptyView()
+        }
+    }
+
+    private var playBadge: some View {
+        Image(systemName: "play.fill")
+            .font(.system(size: 10, weight: .bold))
+            .foregroundColor(.white)
+            .padding(6)
+            .background(.ultraThinMaterial, in: Circle())
+            .overlay(Circle().stroke(.white.opacity(0.25), lineWidth: 0.5))
+    }
+
+    // MARK: - Stub models for detail navigation
+    // The detail views hydrate themselves from itemId + provider; we only need to
+    // seed identity, name, uri, and artwork so the header renders before the load.
+
+    private var stubMetadata: MediaItemMetadata? {
+        guard let path = item.imageUrl else { return nil }
+        return MediaItemMetadata(images: [MediaItemImage(type: "thumb", path: path, provider: item.provider)])
+    }
+
+    private var stubAlbum: Album {
+        Album(
+            itemId: item.itemId,
+            provider: item.provider,
+            name: item.name,
+            version: nil,
+            year: nil,
+            artists: item.artist.map { [ArtistReference(itemId: nil, provider: nil, name: $0)] },
+            uri: item.uri,
+            metadata: stubMetadata,
+            favorite: nil
+        )
+    }
+
+    private var stubPlaylist: Playlist {
+        Playlist(
+            itemId: item.itemId,
+            provider: item.provider,
+            name: item.name,
+            uri: item.uri,
+            metadata: stubMetadata,
+            isEditable: nil,
+            owner: nil,
+            favorite: nil
+        )
+    }
+
+    private var stubArtist: Artist {
+        Artist(
+            itemId: item.itemId,
+            provider: item.provider,
+            name: item.name,
+            sortName: nil,
+            uri: item.uri,
+            metadata: stubMetadata,
+            favorite: nil
+        )
     }
 
     private var iconForMediaType: String {
@@ -524,36 +616,6 @@ struct RecentlyPlayedCard: View {
         case "playlist": return "music.note.list"
         case "artist": return "person.fill"
         default: return "music.note"
-        }
-    }
-
-    private var mediaTypeBadge: some View {
-        Group {
-            switch item.mediaType {
-            case "track":
-                Image(systemName: "music.note")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(.white)
-                    .padding(4)
-                    .background(Color.red.opacity(0.9))
-                    .clipShape(Circle())
-            case "album":
-                Image(systemName: "square.stack.fill")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(.white)
-                    .padding(4)
-                    .background(Color.purple.opacity(0.9))
-                    .clipShape(Circle())
-            case "playlist":
-                Image(systemName: "music.note.list")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(.white)
-                    .padding(4)
-                    .background(Color.orange.opacity(0.9))
-                    .clipShape(Circle())
-            default:
-                EmptyView()
-            }
         }
     }
 
