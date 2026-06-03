@@ -5,14 +5,20 @@ struct PlaylistGridItem: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: playlist.imageUrl, size: .small)) {
-                playlistPlaceholder
-            }
-            .aspectRatio(contentMode: .fill)
-            .frame(maxWidth: .infinity)
-            .aspectRatio(1, contentMode: .fit)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+            // A clear square sizer fixes the cell to 1:1 at the column width; the
+            // artwork fills it via overlay and is hard-clipped, so non-square mosaic
+            // covers (common for playlists) can't bleed out of the cell.
+            Color.clear
+                .aspectRatio(1, contentMode: .fit)
+                .frame(maxWidth: .infinity)
+                .overlay {
+                    CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: playlist.imageUrl, size: .small)) {
+                        playlistPlaceholder
+                    }
+                    .aspectRatio(contentMode: .fill)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(playlist.name)

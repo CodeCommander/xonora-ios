@@ -5,14 +5,19 @@ struct AlbumGridItem: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: album.imageUrl, size: .small)) {
-                albumPlaceholder
-            }
-            .aspectRatio(contentMode: .fill)
-            .frame(maxWidth: .infinity)
-            .aspectRatio(1, contentMode: .fit)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+            // Clear square sizer + overlaid, hard-clipped artwork so non-square
+            // covers can't bleed out of the cell (matches PlaylistGridItem).
+            Color.clear
+                .aspectRatio(1, contentMode: .fit)
+                .frame(maxWidth: .infinity)
+                .overlay {
+                    CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: album.imageUrl, size: .small)) {
+                        albumPlaceholder
+                    }
+                    .aspectRatio(contentMode: .fill)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(album.name)
