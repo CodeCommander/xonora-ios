@@ -10,6 +10,10 @@ struct NowPlayingView: View {
     @State private var dragOffset: CGFloat = 0
     @State private var showQueue = false
 
+    // Single horizontal inset shared by artwork, track info, and controls so the
+    // progress bar and transport align under the artwork instead of overhanging it.
+    private let contentMargin: CGFloat = 32
+
     var body: some View {
         VStack(spacing: 0) {
             // Header
@@ -20,21 +24,25 @@ struct NowPlayingView: View {
 
             // Album artwork
             albumArtwork
-                .padding(.horizontal, 40)
+                .padding(.horizontal, contentMargin)
                 .padding(.vertical, 20)
 
             Spacer()
 
             // Track info
             trackInfo
-                .padding(.horizontal, 24)
+                .padding(.horizontal, contentMargin)
                 .padding(.bottom, 24)
 
             // Controls
             PlayerControls(playerManager: playerManager, size: .full)
-                .padding(.horizontal, 24)
+                .padding(.horizontal, contentMargin)
                 .padding(.bottom, 24)
         }
+        // Cap content width so the layout stays balanced on large phones/iPad,
+        // then center that capped column on screen.
+        .frame(maxWidth: 540)
+        .frame(maxWidth: .infinity)
         .colorScheme(.dark)
         .background(
             albumArtView.ignoresSafeArea()
