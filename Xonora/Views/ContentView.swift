@@ -326,10 +326,28 @@ struct ServerSetupView: View {
                     .stroke(Color.white.opacity(0.2), lineWidth: 1)
             )
 
-            Text("Your Music Assistant server URL with port")
+            serverURLHint
                 .font(.caption)
-                .foregroundColor(.white.opacity(0.5))
                 .padding(.leading, 4)
+                .animation(.easeInOut(duration: 0.15), value: serverURL)
+        }
+    }
+
+    /// Live hint under the Server Address field: shows what http://host:port the
+    /// raw input will resolve to, so the assumed scheme/port aren't silently applied.
+    @ViewBuilder
+    private var serverURLHint: some View {
+        let trimmed = serverURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty {
+            Text("http:// and port \(PlayerViewModel.defaultServerPort) are assumed if omitted")
+                .foregroundColor(.white.opacity(0.5))
+        } else {
+            let resolved = PlayerViewModel.normalizeServerURL(serverURL)
+            Text("Will connect to ")
+                .foregroundColor(.white.opacity(0.5))
+            + Text(resolved)
+                .foregroundColor(.xonoraCyan)
+                .fontWeight(.medium)
         }
     }
 

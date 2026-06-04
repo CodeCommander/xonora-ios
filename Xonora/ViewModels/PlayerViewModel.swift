@@ -145,7 +145,7 @@ class PlayerViewModel: ObservableObject {
             return
         }
 
-        let url = normalizeServerURL(serverURL)
+        let url = Self.normalizeServerURL(serverURL)
         UserDefaults.standard.set(url, forKey: serverURLKey)
         UserDefaults.standard.set(accessToken, forKey: accessTokenKey)
 
@@ -197,7 +197,7 @@ class PlayerViewModel: ObservableObject {
     }
 
     func updateServerURL(_ url: String) {
-        serverURL = normalizeServerURL(url)
+        serverURL = Self.normalizeServerURL(url)
         UserDefaults.standard.set(serverURL, forKey: serverURLKey)
     }
 
@@ -207,20 +207,35 @@ class PlayerViewModel: ObservableObject {
         UserDefaults.standard.set(trimmedToken, forKey: accessTokenKey)
     }
 
-    private func normalizeServerURL(_ url: String) -> String {
-        var normalizedURL = url.trimmingCharacters(in: .whitespacesAndNewlines)
+    /// Default Music Assistant HTTP port, assumed when the user omits one.
+    static let defaultServerPort = 8095
 
-        // Add http:// if no scheme provided
+    /// Normalize host-first input into a full `scheme://host:port` URL.
+    /// Assumes `http://` and `:\(defaultServerPort)` unless the user specifies
+    /// otherwise; any explicit scheme or port the user types is preserved.
+    /// Returns "" for empty/whitespace input. Pure — safe to call for live preview.
+    static func normalizeServerURL(_ url: String) -> String {
+        var normalizedURL = url.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedURL.isEmpty else { return "" }
+
+        // Strip trailing slashes
+        while normalizedURL.hasSuffix("/") {
+            normalizedURL = String(normalizedURL.dropLast())
+        }
+
+        // Assume http:// if no scheme provided
         if !normalizedURL.hasPrefix("http://") && !normalizedURL.hasPrefix("https://") {
             normalizedURL = "http://\(normalizedURL)"
         }
 
-        // Remove trailing slash
-        if normalizedURL.hasSuffix("/") {
-            normalizedURL = String(normalizedURL.dropLast())
+        // Assume the default port if none was specified
+        guard var components = URLComponents(string: normalizedURL) else {
+            return normalizedURL
         }
-
-        return normalizedURL
+        if components.port == nil {
+            components.port = defaultServerPort
+        }
+        return components.string ?? normalizedURL
     }
 
     // MARK: - Playback Control
