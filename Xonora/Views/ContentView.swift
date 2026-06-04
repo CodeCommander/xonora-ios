@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct ContentView: View {
     @EnvironmentObject var playerViewModel: PlayerViewModel
@@ -317,6 +318,9 @@ struct ServerSetupView: View {
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                     .keyboardType(.URL)
+                    // Pair with the token's .password field so iOS can save the
+                    // pair to Passwords (server acts as the credential's account).
+                    .textContentType(.username)
             }
             .padding()
             .background(glassBackground)
@@ -374,6 +378,10 @@ struct ServerSetupView: View {
                 .foregroundColor(.white)
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
+                // Treat the token as the password half of a credential so iOS
+                // offers to save it to Passwords. The Connect action dismisses the
+                // keyboard first so the save sheet can't swallow the tap.
+                .textContentType(.password)
 
                 Button {
                     showPassword.toggle()
@@ -436,6 +444,9 @@ struct ServerSetupView: View {
 
     private var connectButton: some View {
         Button {
+            // Resign the keyboard before connecting so committing the token
+            // doesn't race iOS's AutoFill save sheet against this tap.
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
             playerViewModel.updateServerURL(serverURL)
             playerViewModel.updateCredentials(accessToken: accessToken)
             playerViewModel.connectToServer()
