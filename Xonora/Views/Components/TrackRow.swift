@@ -142,7 +142,7 @@ struct TrackRow: View {
                                     PlayerManager.shared.playTrack(track)
                                 } label: {
                                     HStack {
-                                        Image(systemName: player.provider == "sendspin" ? "iphone" : "speaker.wave.2")
+                                        Image(systemName: player.systemIcon)
                                         Text(player.name)
                                         if player.playerId == XonoraClient.shared.currentPlayer?.playerId {
                                             Image(systemName: "checkmark")
@@ -207,7 +207,7 @@ struct TrackRow: View {
                             PlayerManager.shared.playTrack(track)
                         } label: {
                             HStack {
-                                Image(systemName: player.provider == "sendspin" ? "iphone" : "speaker.wave.2")
+                                Image(systemName: player.systemIcon)
                                 Text(player.name)
                                 if player.playerId == XonoraClient.shared.currentPlayer?.playerId {
                                     Image(systemName: "checkmark")

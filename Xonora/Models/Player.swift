@@ -10,8 +10,26 @@ struct MAPlayer: Identifiable, Codable, Hashable {
     let volume: Int?
     let currentMedia: CurrentMedia?
     let queueId: String?
+    /// Player IDs synced under this player when it is a sync-group leader (MA `group_childs`).
+    let groupChilds: [String]?
+    /// The leader this player is synced to, if it is a group member (MA `synced_to`).
+    let syncedTo: String?
 
     var id: String { playerId }
+
+    /// True when this player leads a sync group with one or more members.
+    var isGroupLeader: Bool { !(groupChilds ?? []).isEmpty }
+
+    /// True when this player is a member synced to another (leader) player.
+    var isGroupMember: Bool { syncedTo != nil }
+
+    /// SF Symbol for this player, matching the PWA's icon language: the on-device
+    /// player shows a phone; a player leading a sync group shows a *pair* of
+    /// speakers; an ungrouped external player shows a single speaker.
+    var systemIcon: String {
+        if provider == "sendspin" { return "iphone" }
+        return isGroupLeader ? "hifispeaker.2.fill" : "speaker.wave.2"
+    }
 
     enum CodingKeys: String, CodingKey {
         case playerId = "player_id"
@@ -23,6 +41,8 @@ struct MAPlayer: Identifiable, Codable, Hashable {
         case volume = "volume_level"
         case currentMedia = "current_media"
         case queueId = "active_source"
+        case groupChilds = "group_childs"
+        case syncedTo = "synced_to"
     }
 }
 

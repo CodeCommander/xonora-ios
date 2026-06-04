@@ -367,7 +367,7 @@ struct PlayerCard: View {
                             .fill(isSelected ? Color.accentColor.opacity(0.2) : Color.gray.opacity(0.1))
                             .frame(width: 32, height: 32)
 
-                        Image(systemName: player.provider == "sendspin" ? "iphone" : "hifispeaker.fill")
+                        Image(systemName: player.systemIcon)
                             .font(.system(size: 14))
                             .foregroundColor(isSelected ? .accentColor : .secondary)
                     }
@@ -591,8 +591,9 @@ struct QueueTabView: View {
                             guard player.available else { return }
 
                             if player.playerId != xonoraClient.currentPlayer?.playerId {
-                                // Switch to this player
-                                playerManager.transferPlayback(to: player, resumePlayback: true)
+                                // Plain tap retargets the remote at this player and
+                                // reflects its real state (no audio is moved/copied).
+                                playerManager.selectPlayer(player)
                             } else {
                                 // Already selected - refresh the queue from server
                                 Task {
@@ -602,6 +603,7 @@ struct QueueTabView: View {
                         }
                         .opacity(player.available ? 1.0 : 0.5)
                         .allowsHitTesting(player.available)
+                        .contextMenu { PlayerContextActions(player: player) }
                     }
 
                     // Empty state if no players at all
@@ -801,10 +803,12 @@ struct QueueTabView: View {
                 ForEach(xonoraClient.players.filter { $0.available }) { player in
                     Button {
                         print("[QueueTabView] User selected player: \(player.name)")
-                        playerManager.transferPlayback(to: player, resumePlayback: true)
+                        // Plain tap retargets + reflects; Move/Sync live in the
+                        // long-press menu so a tap never duplicates playback.
+                        playerManager.selectPlayer(player)
                     } label: {
                         HStack {
-                            Image(systemName: player.provider == "sendspin" ? "iphone" : "speaker.wave.2")
+                            Image(systemName: player.systemIcon)
                                 .foregroundColor(player.playerId == xonoraClient.currentPlayer?.playerId ? .accentColor : .primary)
                                 .frame(width: 28)
 
@@ -820,6 +824,7 @@ struct QueueTabView: View {
                         }
                     }
                     .buttonStyle(.plain)
+                    .contextMenu { PlayerContextActions(player: player) }
                 }
             }
         } header: {
@@ -851,9 +856,8 @@ struct PlayerPickerSheet: View {
                 } else {
                     ForEach(xonoraClient.players.filter { $0.available }) { player in
                         Button {
-                            if player.playerId != xonoraClient.currentPlayer?.playerId {
-                                playerManager.transferPlayback(to: player, resumePlayback: true)
-                            }
+                            // Plain tap retargets + reflects the target's state.
+                            playerManager.selectPlayer(player)
                             dismiss()
                         } label: {
                             HStack(spacing: 12) {
@@ -863,7 +867,7 @@ struct PlayerPickerSheet: View {
                                         .fill(player.playerId == xonoraClient.currentPlayer?.playerId ? Color.accentColor.opacity(0.15) : Color.gray.opacity(0.1))
                                         .frame(width: 44, height: 44)
 
-                                    Image(systemName: player.provider == "sendspin" ? "iphone" : "hifispeaker.fill")
+                                    Image(systemName: player.systemIcon)
                                         .font(.system(size: 18))
                                         .foregroundColor(player.playerId == xonoraClient.currentPlayer?.playerId ? .accentColor : .primary)
                                 }
@@ -890,6 +894,7 @@ struct PlayerPickerSheet: View {
                             .padding(.vertical, 4)
                         }
                         .buttonStyle(.plain)
+                        .contextMenu { PlayerContextActions(player: player) }
                     }
                 }
             }

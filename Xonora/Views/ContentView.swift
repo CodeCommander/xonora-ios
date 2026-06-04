@@ -803,11 +803,14 @@ struct SettingsView: View {
                     } else {
                         Picker("Active Player", selection: Binding(
                             get: { client.currentPlayer },
-                            set: { client.currentPlayer = $0 }
+                            // Retarget + reflect the chosen player's real state
+                            // instead of bare-assigning currentPlayer (which left
+                            // the card frozen on the old player). See XON-008/010.
+                            set: { if let newPlayer = $0 { PlayerManager.shared.selectPlayer(newPlayer) } }
                         )) {
                             ForEach(client.players) { player in
                                 HStack {
-                                    Image(systemName: player.provider == "sendspin" ? "iphone" : "speaker.wave.2")
+                                    Image(systemName: player.systemIcon)
                                     Text(player.name)
                                 }
                                 .tag(player as MAPlayer?)

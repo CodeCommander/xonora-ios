@@ -510,10 +510,31 @@ class PlayerManager: ObservableObject {
         Task { try? await XonoraClient.shared.setRepeat(mode: modeString) }
     }
 
-    /// Transfer current playback to a different player
-    /// - Parameter player: The new player to transfer playback to
-    /// - Parameter resumePlayback: If true and something is playing, restart playback on new player
-    func transferPlayback(to player: MAPlayer, resumePlayback: Bool = true) {
+    /// Retarget the remote at `player` and reflect ITS current state.
+    /// No audio is moved or copied: the now-playing card shows whatever the
+    /// target is actually playing, or clears to stopped if it's idle. This is
+    /// what a plain tap on a player selector should do (XON-008).
+    ///
+    /// Note: an idle player never broadcasts a `queue_updated` event, so we must
+    /// *pull* its state via `fetchQueueFromServer` rather than wait for one.
+    func selectPlayer(_ player: MAPlayer) {
+        guard player.playerId != XonoraClient.shared.currentPlayer?.playerId else { return }
+
+        print("[PlayerManager] Selecting (retarget) player: '\(player.name)' (id: \(player.playerId))")
+
+        // Prevent auto-selection from overriding the user's choice.
+        XonoraClient.shared.userSelectedPlayer = true
+        XonoraClient.shared.currentPlayer = player
+
+        // Pull the target's real queue + state and reflect it in the card.
+        Task { await fetchQueueFromServer(for: player) }
+    }
+
+    /// Move the currently-playing track/queue onto `player` and STOP the source,
+    /// so playback follows you to the new room instead of duplicating. Offered
+    /// via long-press, not a plain tap. If nothing is playing, this degrades to
+    /// a plain retarget.
+    func movePlaybackHere(to player: MAPlayer) {
         let oldPlayer = XonoraClient.shared.currentPlayer
         let wasPlaying = isPlaying
         let savedTrack = currentTrack
@@ -522,61 +543,213 @@ class PlayerManager: ObservableObject {
         let savedIndex = currentIndex
         let savedSource = currentSource
 
-        // Set transfer flag to ignore state changes during switch
+        guard player.playerId != oldPlayer?.playerId else { return }
+
+        // Nothing to move — just retarget and reflect the target.
+        guard let track = savedTrack else {
+            selectPlayer(player)
+            return
+        }
+
+        // Set transfer flag to ignore transient state changes during the switch.
         isTransferringPlayback = true
 
-        print("[PlayerManager] Transferring playback: '\(oldPlayer?.name ?? "none")' -> '\(player.name)'")
-        print("[PlayerManager]   - Was playing: \(wasPlaying)")
-        print("[PlayerManager]   - Current track: \(savedTrack?.name ?? "none")")
-        print("[PlayerManager]   - Position: \(savedPosition)s")
-        print("[PlayerManager]   - Queue size: \(savedQueue.count)")
+        print("[PlayerManager] Moving playback '\(track.name)': '\(oldPlayer?.name ?? "none")' -> '\(player.name)' (was playing: \(wasPlaying))")
 
-        // Mark as user-selected to prevent auto-selection from overriding
+        // Mark as user-selected to prevent auto-selection from overriding.
         XonoraClient.shared.userSelectedPlayer = true
-
-        // Switch to new player
         XonoraClient.shared.currentPlayer = player
 
-        // If there's a current track and we want to resume, restart playback on new player
-        // Transfer even if paused/stopped, as long as there's a track to play
-        if resumePlayback, let track = savedTrack {
-            print("[PlayerManager] Resuming playback of '\(track.name)' on '\(player.name)' (was playing: \(wasPlaying))")
+        // Restore queue state and play the track on the new player.
+        queue = savedQueue
+        currentIndex = savedIndex
+        currentSource = savedSource
+        playTrack(track, fromQueue: savedQueue, sourceName: savedSource)
 
-            // Restore queue state
+        // Seek to the saved position after a short delay to let playback start.
+        // Only seek if we had meaningful progress (more than 2 seconds).
+        if savedPosition > 2 {
+            Task {
+                try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
+                if self.currentTrack?.uri == track.uri {
+                    print("[PlayerManager] Seeking to saved position: \(savedPosition)s")
+                    self.seek(to: savedPosition)
+                }
+            }
+        }
+
+        // Stop the source so we don't leave two rooms playing the same thing.
+        if let old = oldPlayer {
+            print("[PlayerManager] Stopping source player '\(old.name)' after move")
+            Task { try? await XonoraClient.shared.stopPlayer(old.playerId) }
+        }
+
+        // Clear transfer flag after a delay to allow the server to stabilize.
+        Task {
+            try? await Task.sleep(nanoseconds: 3_000_000_000) // 3 seconds
+            self.isTransferringPlayback = false
+        }
+    }
+
+    /// Group `player` with the current player so they play in sync (MA grouping).
+    /// Offered via long-press. Best-effort — MA sync reliability varies by
+    /// provider (AirPlay especially), so this needs device verification.
+    func syncPlaybackHere(to player: MAPlayer) {
+        guard let leader = XonoraClient.shared.currentPlayer,
+              leader.playerId != player.playerId else { return }
+
+        print("[PlayerManager] Syncing '\(player.name)' with leader '\(leader.name)'")
+        Task { try? await XonoraClient.shared.groupPlayer(player.playerId, withTarget: leader.playerId) }
+    }
+
+    /// Removes a single member from its sync group ("Stop Playback Here"): that
+    /// player leaves the group and stops, the rest keep playing. Surfaces failures.
+    func ungroupPlayer(_ player: MAPlayer) {
+        print("[PlayerManager] Ungrouping '\(player.name)' from its group")
+        Task {
+            do {
+                try await XonoraClient.shared.ungroupPlayer(player.playerId)
+            } catch {
+                playbackState = .error("Couldn't remove \(player.name) from the group: \(errorReason(error))")
+            }
+        }
+    }
+
+    /// Makes `player` the only speaker producing audio ("Play Here Only"):
+    /// - **Leader** (has `group_childs`): drop every member; the leader keeps playing.
+    /// - **Member** (`synced_to` set): take playback over to it and stop the rest of
+    ///   the group (see `promoteMemberToSolePlayer`).
+    ///
+    /// Each step is awaited and checked; any failure surfaces a "Playback Error"
+    /// alert (via `playbackState = .error`) rather than failing silently.
+    func playHereOnly(_ player: MAPlayer) {
+        if player.isGroupLeader {
+            Task { await disbandGroup(ledBy: player) }
+        } else if let leaderId = player.syncedTo {
+            Task { await promoteMemberToSolePlayer(player, leaderId: leaderId) }
+        }
+    }
+
+    /// Disbands the sync group led by `leader`: ungroup every member, surfacing the
+    /// first failure to the user. The leader keeps playing.
+    private func disbandGroup(ledBy leader: MAPlayer) async {
+        let children = leader.groupChilds ?? []
+        guard !children.isEmpty else { return }
+
+        print("[PlayerManager] Play here only — disbanding group led by '\(leader.name)' (\(children.count) member(s))")
+        do {
+            for childId in children {
+                try await XonoraClient.shared.ungroupPlayer(childId)
+            }
+        } catch {
+            playbackState = .error("Couldn't ungroup the speakers on \(leader.name): \(errorReason(error))")
+        }
+    }
+
+    /// Promotes a synced member to the sole player. Sequenced and checked:
+    ///   1. Stop the leader (and, by extension, its synced members).
+    ///   2. Ungroup every member of the old group — await + verify each — so the
+    ///      target is independent and the others won't keep playing.
+    ///   3. Send the saved queue to the now-unsynced target.
+    /// Any failure aborts and surfaces a "Playback Error" alert.
+    private func promoteMemberToSolePlayer(_ player: MAPlayer, leaderId: String) async {
+        // A synced member owns no queue (it lives on the leader), so we capture the
+        // current playback and re-issue it on the target after detaching.
+        guard let track = currentTrack else {
+            // Nothing playing — just retarget and reflect.
+            selectPlayer(player)
+            return
+        }
+        let savedQueue = queue
+        let savedIndex = currentIndex
+        let savedSource = currentSource
+        let savedPosition = currentTime
+
+        // Every player in the old group (target + siblings). Stopping/ungrouping
+        // these leaves only the target, which we then start.
+        let leader = XonoraClient.shared.players.first { $0.playerId == leaderId }
+        let groupMembers = leader?.groupChilds ?? [player.playerId]
+
+        isTransferringPlayback = true
+        print("[PlayerManager] Play here only — promoting member '\(player.name)' to sole player")
+
+        do {
+            // 1. Stop the leader so the whole synced group goes quiet.
+            try await XonoraClient.shared.stopPlayer(leaderId)
+
+            // 2. Ungroup every member (incl. target) so each is independent + idle,
+            //    then detach the leader itself in case MA keeps a 1-player group.
+            for memberId in groupMembers {
+                try await XonoraClient.shared.ungroupPlayer(memberId)
+            }
+            try await XonoraClient.shared.ungroupPlayer(leaderId)
+
+            // 3. Target is now unsynced — send it the fresh queue.
+            XonoraClient.shared.userSelectedPlayer = true
+            XonoraClient.shared.currentPlayer = player
+            let uris = upcomingURIs(from: savedQueue, startingAt: savedIndex, fallback: track)
+            try await XonoraClient.shared.playMedia(uris: uris)
+
+            // Reflect the new state locally.
             queue = savedQueue
             currentIndex = savedIndex
             currentSource = savedSource
+            currentTrack = track
+            currentTime = 0
+            playbackState = .playing
+            startProgressTimer()
+            updateNowPlayingInfo()
 
-            // Play the track on the new player
-            playTrack(track, fromQueue: savedQueue, sourceName: savedSource)
-
-            // Seek to the saved position after a short delay to let playback start
-            // Only seek if we had meaningful progress (more than 2 seconds)
+            // Re-seek to where we were, once playback has had a moment to start.
             if savedPosition > 2 {
-                Task {
-                    try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
-                    await MainActor.run {
-                        if self.currentTrack?.uri == track.uri {
-                            print("[PlayerManager] Seeking to saved position: \(savedPosition)s")
-                            self.seek(to: savedPosition)
-                        }
-                    }
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                if currentTrack?.uri == track.uri {
+                    seek(to: savedPosition)
                 }
             }
-        } else {
-            print("[PlayerManager] Player switched (no local playback to transfer)")
-
-            // Fetch the queue from the new player if it has content
-            Task {
-                await fetchQueueFromServer(for: player)
+        } catch {
+            // A lost-ack timeout on the final play usually means it worked anyway
+            // (matches playTrack's behavior); anything else is a real failure to show.
+            let nsError = error as NSError
+            let isBenignTimeout = nsError.code == -1
+                && (nsError.userInfo[NSLocalizedDescriptionKey] as? String) == "Request timeout"
+            if isBenignTimeout {
+                print("[PlayerManager] Play here only — suppressing benign play timeout")
+                currentPlayerDidTakeOver(player, track: track, queue: savedQueue, index: savedIndex, source: savedSource)
+            } else {
+                playbackState = .error("Couldn't move playback to \(player.name): \(errorReason(error))")
             }
         }
 
-        // Clear transfer flag after delay to allow server to stabilize
-        Task {
-            try? await Task.sleep(nanoseconds: 3_000_000_000) // 3 seconds
-            await MainActor.run { self.isTransferringPlayback = false }
-        }
+        isTransferringPlayback = false
+    }
+
+    /// Local-state bookkeeping when the target player has taken over playback.
+    private func currentPlayerDidTakeOver(_ player: MAPlayer, track: Track, queue savedQueue: [Track], index: Int, source: String?) {
+        XonoraClient.shared.userSelectedPlayer = true
+        XonoraClient.shared.currentPlayer = player
+        queue = savedQueue
+        currentIndex = index
+        currentSource = source
+        currentTrack = track
+        playbackState = .playing
+        startProgressTimer()
+        updateNowPlayingInfo()
+    }
+
+    /// The URIs to send when (re)starting a queue: the current track plus a bounded
+    /// window of upcoming items (the server handles advancement beyond that).
+    private func upcomingURIs(from queue: [Track], startingAt index: Int, fallback track: Track) -> [String] {
+        let maxTracksToSend = 20
+        guard !queue.isEmpty, index >= 0, index < queue.count else { return [track.uri] }
+        let endIndex = min(index + maxTracksToSend, queue.count)
+        return Array(queue[index..<endIndex]).map { $0.uri }
+    }
+
+    /// Human-readable reason from a thrown command error, for user-facing alerts.
+    private func errorReason(_ error: Error) -> String {
+        let nsError = error as NSError
+        return (nsError.userInfo[NSLocalizedDescriptionKey] as? String) ?? error.localizedDescription
     }
 
     /// Fetches the queue from the server for a specific player
@@ -592,11 +765,16 @@ class PlayerManager: ObservableObject {
 
             await MainActor.run {
                 if tracks.isEmpty {
-                    print("[PlayerManager] Server queue is empty")
-                    // Still update from player's currentMedia if available
-                    if let media = player.currentMedia, let title = media.title {
-                        print("[PlayerManager] Player has currentMedia: '\(title)'")
-                    }
+                    // Target player is idle/empty — reflect that honestly rather than
+                    // leaving the previous player's track frozen on the card (XON-008).
+                    print("[PlayerManager] Server queue is empty — clearing now playing")
+                    self.queue = []
+                    self.currentTrack = nil
+                    self.currentTime = 0
+                    self.duration = 0
+                    self.playbackState = .stopped
+                    self.stopProgressTimer()
+                    self.clearNowPlayingInfo()
                 } else {
                     print("[PlayerManager] Loaded \(tracks.count) tracks from server queue")
                     self.queue = tracks
@@ -608,15 +786,21 @@ class PlayerManager: ObservableObject {
                         self.currentTrack = tracks[self.currentIndex]
                     }
 
-                    // Update playback state based on server state
+                    // Update playback state based on server state, and keep the
+                    // progress timer + now-playing card in sync with it.
                     switch state.state {
                     case "playing":
                         self.playbackState = .playing
+                        self.startProgressTimer()
                     case "paused":
                         self.playbackState = .paused
+                        self.stopProgressTimer()
                     default:
                         self.playbackState = .stopped
+                        self.stopProgressTimer()
                     }
+
+                    self.updateNowPlayingInfo()
                 }
             }
         } catch {

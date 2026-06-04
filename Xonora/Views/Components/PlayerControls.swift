@@ -157,11 +157,12 @@ struct PlayerControls: View {
                         ForEach(xonoraClient.players.filter { $0.available }) { player in
                             Button {
                                 print("[PlayerControls] User selected player: \(player.name) (id: \(player.playerId))")
-                                // Use transferPlayback to properly switch players and continue playback
-                                playerManager.transferPlayback(to: player, resumePlayback: true)
+                                // Plain tap retargets the remote and reflects the
+                                // target's state — it does not move/copy audio.
+                                playerManager.selectPlayer(player)
                             } label: {
                                 HStack {
-                                    Image(systemName: player.provider == "sendspin" ? "iphone" : "speaker.wave.2")
+                                    Image(systemName: player.systemIcon)
                                     Text(player.name)
                                     if player.playerId == xonoraClient.currentPlayer?.playerId {
                                         Image(systemName: "checkmark")
@@ -171,7 +172,7 @@ struct PlayerControls: View {
                         }
                     } label: {
                         HStack(spacing: 6) {
-                            Image(systemName: isLocalPlayer ? "iphone" : "speaker.wave.2.fill")
+                            Image(systemName: xonoraClient.currentPlayer?.systemIcon ?? "speaker.wave.2")
                                 .font(.caption)
                             Text(xonoraClient.currentPlayer?.name ?? "Select Player")
                                 .font(.caption)
@@ -277,6 +278,59 @@ struct VolumeView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: MPVolumeView, context: Context) {}
+}
+
+/// Long-press actions for a player selector. A plain tap retargets the remote
+/// (`PlayerManager.selectPlayer`); these are the extra "do something with my
+/// playback / this group" actions surfaced via `.contextMenu`, branched on the
+/// player's grouping state.
+struct PlayerContextActions: View {
+    let player: MAPlayer
+    @ObservedObject private var playerManager = PlayerManager.shared
+    @ObservedObject private var xonoraClient = XonoraClient.shared
+
+    var body: some View {
+        let current = xonoraClient.currentPlayer
+        let isCurrent = player.playerId == current?.playerId
+        // Already synced under the player we're controlling — Move/Sync would be
+        // redundant, so we only offer to drop it ("Stop Playback Here").
+        let isInCurrentGroup = player.syncedTo == current?.playerId
+            || (current?.groupChilds?.contains(player.playerId) ?? false)
+
+        // Move/Sync: act on a *different*, not-already-grouped player while playing.
+        if !isCurrent, !isInCurrentGroup, playerManager.currentTrack != nil {
+            Button {
+                playerManager.movePlaybackHere(to: player)
+            } label: {
+                Label("Move Playback Here", systemImage: "arrow.uturn.right.circle")
+            }
+
+            Button {
+                playerManager.syncPlaybackHere(to: player)
+            } label: {
+                Label("Sync Playback Here", systemImage: "rectangle.on.rectangle")
+            }
+        }
+
+        // Ungroup a single member: it leaves the group and stops; others continue.
+        if player.isGroupMember {
+            Button(role: .destructive) {
+                playerManager.ungroupPlayer(player)
+            } label: {
+                Label("Stop Playback Here", systemImage: "speaker.slash")
+            }
+        }
+
+        // Make this the only speaker playing — disbands the group (if it leads one)
+        // or promotes it to sole player (if it's a member), stopping everyone else.
+        if player.isGroupLeader || player.isGroupMember {
+            Button {
+                playerManager.playHereOnly(player)
+            } label: {
+                Label("Play Here Only", systemImage: "speaker.wave.2")
+            }
+        }
+    }
 }
 
 struct PlayerControls_Previews: PreviewProvider {

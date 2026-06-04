@@ -602,6 +602,24 @@ class XonoraClient: NSObject, ObservableObject {
         _ = try await sendCommand("player_queues/stop", args: ["queue_id": playerId])
     }
 
+    /// Stops a specific player's queue regardless of the current selection.
+    /// Used when moving playback off a source player so it doesn't keep playing.
+    func stopPlayer(_ playerId: String) async throws {
+        _ = try await sendCommand("player_queues/stop", args: ["queue_id": playerId])
+    }
+
+    /// Groups `playerId` into `targetPlayerId`'s sync group (MA player grouping),
+    /// so both play in sync. Best-effort — MA sync reliability varies by provider.
+    func groupPlayer(_ playerId: String, withTarget targetPlayerId: String) async throws {
+        _ = try await sendCommand("players/cmd/group", args: ["player_id": playerId, "target_player": targetPlayerId])
+    }
+
+    /// Removes `playerId` from its sync group (MA `players/cmd/ungroup`). If it was
+    /// a member, it leaves the group; if it was the leader, MA dissolves the group.
+    func ungroupPlayer(_ playerId: String) async throws {
+        _ = try await sendCommand("players/cmd/ungroup", args: ["player_id": playerId])
+    }
+
     func seek(position: TimeInterval) async throws {
         guard let playerId = currentPlayer?.playerId else { return }
         _ = try await sendCommand("player_queues/seek", args: ["queue_id": playerId, "position": Int(position)])
