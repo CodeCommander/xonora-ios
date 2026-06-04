@@ -10,15 +10,15 @@ struct MAPlayer: Identifiable, Codable, Hashable {
     let volume: Int?
     let currentMedia: CurrentMedia?
     let queueId: String?
-    /// Player IDs synced under this player when it is a sync-group leader (MA `group_childs`).
-    let groupChilds: [String]?
+    /// Player IDs synced under this player when it is a sync-group leader (MA `group_members`).
+    let groupMembers: [String]?
     /// The leader this player is synced to, if it is a group member (MA `synced_to`).
     let syncedTo: String?
 
     var id: String { playerId }
 
     /// True when this player leads a sync group with one or more members.
-    var isGroupLeader: Bool { !(groupChilds ?? []).isEmpty }
+    var isGroupLeader: Bool { !(groupMembers ?? []).isEmpty }
 
     /// True when this player is a member synced to another (leader) player.
     var isGroupMember: Bool { syncedTo != nil }
@@ -41,7 +41,7 @@ struct MAPlayer: Identifiable, Codable, Hashable {
         case volume = "volume_level"
         case currentMedia = "current_media"
         case queueId = "active_source"
-        case groupChilds = "group_childs"
+        case groupMembers = "group_members"
         case syncedTo = "synced_to"
     }
 }

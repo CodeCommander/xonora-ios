@@ -592,14 +592,23 @@ class PlayerManager: ObservableObject {
     }
 
     /// Group `player` with the current player so they play in sync (MA grouping).
-    /// Offered via long-press. Best-effort — MA sync reliability varies by
-    /// provider (AirPlay especially), so this needs device verification.
+    /// Offered via long-press; the current player becomes the sync-group leader.
+    /// Failures surface an alert rather than failing silently (MA sync reliability
+    /// varies by provider). NOTE: if the app's selected player has drifted from
+    /// the player MA actually has playing, grouping the live player under a silent
+    /// leader can stop both — the underlying reflect drift is still open (XON-007/008).
     func syncPlaybackHere(to player: MAPlayer) {
         guard let leader = XonoraClient.shared.currentPlayer,
               leader.playerId != player.playerId else { return }
 
         print("[PlayerManager] Syncing '\(player.name)' with leader '\(leader.name)'")
-        Task { try? await XonoraClient.shared.groupPlayer(player.playerId, withTarget: leader.playerId) }
+        Task {
+            do {
+                try await XonoraClient.shared.groupPlayer(player.playerId, withTarget: leader.playerId)
+            } catch {
+                playbackState = .error("Couldn't sync \(player.name) with \(leader.name): \(errorReason(error))")
+            }
+        }
     }
 
     /// Removes a single member from its sync group ("Stop Playback Here"): that
@@ -633,7 +642,7 @@ class PlayerManager: ObservableObject {
     /// Disbands the sync group led by `leader`: ungroup every member, surfacing the
     /// first failure to the user. The leader keeps playing.
     private func disbandGroup(ledBy leader: MAPlayer) async {
-        let children = leader.groupChilds ?? []
+        let children = leader.groupMembers ?? []
         guard !children.isEmpty else { return }
 
         print("[PlayerManager] Play here only — disbanding group led by '\(leader.name)' (\(children.count) member(s))")
@@ -668,7 +677,7 @@ class PlayerManager: ObservableObject {
         // Every player in the old group (target + siblings). Stopping/ungrouping
         // these leaves only the target, which we then start.
         let leader = XonoraClient.shared.players.first { $0.playerId == leaderId }
-        let groupMembers = leader?.groupChilds ?? [player.playerId]
+        let groupMembers = leader?.groupMembers ?? [player.playerId]
 
         isTransferringPlayback = true
         print("[PlayerManager] Play here only — promoting member '\(player.name)' to sole player")

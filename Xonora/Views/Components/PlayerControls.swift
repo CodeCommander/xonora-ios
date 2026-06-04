@@ -295,7 +295,7 @@ struct PlayerContextActions: View {
         // Already synced under the player we're controlling — Move/Sync would be
         // redundant, so we only offer to drop it ("Stop Playback Here").
         let isInCurrentGroup = player.syncedTo == current?.playerId
-            || (current?.groupChilds?.contains(player.playerId) ?? false)
+            || (current?.groupMembers?.contains(player.playerId) ?? false)
 
         // Move/Sync: act on a *different*, not-already-grouped player while playing.
         if !isCurrent, !isInCurrentGroup, playerManager.currentTrack != nil {
