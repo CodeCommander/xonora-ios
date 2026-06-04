@@ -865,6 +865,21 @@ class PlayerManager: ObservableObject {
         lastTrackId = nil
         cachedArtwork = nil
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+        // Drive the system playback state to .stopped so iOS relinquishes the slot cleanly.
+        MPNowPlayingInfoCenter.default().playbackState = .stopped
+    }
+
+    /// Maps our internal playback state to the system's now-playing state.
+    /// iOS requires this to be set explicitly for apps that don't drive an AVPlayer
+    /// (we remote-control players / use SendspinKit's AVAudioEngine); without it the
+    /// lock-screen Now Playing card appears then intermittently disappears (XON-010).
+    private var systemPlaybackState: MPNowPlayingPlaybackState {
+        switch playbackState {
+        case .playing: return .playing
+        case .paused: return .paused
+        case .loading: return .playing
+        case .stopped, .error: return .stopped
+        }
     }
 
     private func updateNowPlayingInfoAsync() async {
@@ -903,6 +918,8 @@ class PlayerManager: ObservableObject {
 
         await MainActor.run {
             MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+            // Keep the system playback state in lockstep so iOS keeps the slot (XON-010).
+            MPNowPlayingInfoCenter.default().playbackState = self.systemPlaybackState
         }
     }
 
