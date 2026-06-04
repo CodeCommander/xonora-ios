@@ -42,6 +42,9 @@ class XonoraClient: NSObject, ObservableObject {
     private var pendingCallbacks: [String: (Result<Data, Error>) -> Void] = [:]
     private var reconnectAttempts = 0
     private let maxReconnectAttempts = 5
+    /// Auto-reconnect only applies to a connection that was previously established.
+    /// An initial connect that never came up (e.g. wrong host) should fail and stop.
+    private var autoReconnectEnabled = false
     private var accessToken: String?
     private let authMessageId = "auth-handshake"
     private var pingTimer: Timer?
@@ -66,7 +69,7 @@ class XonoraClient: NSObject, ObservableObject {
 
     // MARK: - Connection Management
 
-    func connect(to serverURLString: String, accessToken: String? = nil) {
+    func connect(to serverURLString: String, accessToken: String? = nil, isReconnect: Bool = false) {
         switch connectionState {
         case .connected, .connecting, .authenticating:
             return
@@ -81,7 +84,13 @@ class XonoraClient: NSObject, ObservableObject {
 
         self.serverURL = url
         self.accessToken = accessToken
-        reconnectAttempts = 0
+        // Only a fresh, user-initiated connect resets the retry budget and clears
+        // auto-reconnect. Reconnect-driven calls must preserve both, otherwise the
+        // attempt cap never trips and an unreachable host loops "Connecting…" forever.
+        if !isReconnect {
+            reconnectAttempts = 0
+            autoReconnectEnabled = false
+        }
         connectionState = .connecting
         
         var wsComponents = URLComponents(url: url, resolvingAgainstBaseURL: false)
@@ -131,6 +140,7 @@ class XonoraClient: NSObject, ObservableObject {
 
     func disconnect() {
         stopReconnecting()
+        autoReconnectEnabled = false
         stopPingTimer()
         cancelConnectionTimeout()
         webSocketTask?.cancel(with: .normalClosure, reason: nil)
@@ -158,7 +168,7 @@ class XonoraClient: NSObject, ObservableObject {
 
         DispatchQueue.main.asyncAfter(deadline: .now() + Double(reconnectAttempts) * 2) { [weak self] in
             guard let self = self, self.reconnectAttempts < self.maxReconnectAttempts else { return }
-            self.connect(to: serverURL.absoluteString, accessToken: self.accessToken)
+            self.connect(to: serverURL.absoluteString, accessToken: self.accessToken, isReconnect: true)
         }
     }
 
@@ -194,8 +204,22 @@ class XonoraClient: NSObject, ObservableObject {
                 self.receiveMessage()
             case .failure(let error):
                 Task { @MainActor in
-                    self.connectionState = .error(error.localizedDescription)
-                    self.reconnect()
+                    print("[XonoraClient] WebSocket receive failure: \(error.localizedDescription)")
+                    // A timeout or manual disconnect may have already settled us in a
+                    // terminal state — don't override it or pile on reconnect attempts.
+                    if case .error = self.connectionState { return }
+                    if self.connectionState == .disconnected { return }
+
+                    if self.autoReconnectEnabled {
+                        // A previously working connection dropped — try to recover.
+                        self.connectionState = .error("Connection lost. Reconnecting…")
+                        self.reconnect()
+                    } else {
+                        // The initial connection never came up (e.g. wrong host) —
+                        // surface it and stop so the user can fix the address.
+                        self.cancelConnectionTimeout()
+                        self.connectionState = .error("Couldn't reach the server. Check the address and port, then try again.")
+                    }
                 }
             }
         }
@@ -209,6 +233,7 @@ class XonoraClient: NSObject, ObservableObject {
             if let messageId = json["message_id"] as? String, messageId == authMessageId {
                 if let result = json["result"] as? [String: Any], let authenticated = result["authenticated"] as? Bool, authenticated {
                     connectionState = .connected
+                    autoReconnectEnabled = true
                     reconnectAttempts = 0
                     await fetchPlayers()
                 } else {
@@ -235,6 +260,7 @@ class XonoraClient: NSObject, ObservableObject {
                     }
                 } else {
                     connectionState = .connected
+                    autoReconnectEnabled = true
                     reconnectAttempts = 0
                     await fetchPlayers()
                 }
