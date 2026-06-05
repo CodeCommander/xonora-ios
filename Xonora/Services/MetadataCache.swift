@@ -14,6 +14,7 @@ actor MetadataCache {
     private var artistsCache: [Artist]?
     private var playlistsCache: [Playlist]?
     private var tracksCache: [Track]?
+    private var radiosCache: [Radio]?
     private var albumTracksCache: [String: [Track]] = [:] // albumId -> tracks
     private var playlistTracksCache: [String: [Track]] = [:] // playlistId -> tracks
     private var artistAlbumsCache: [String: [Album]] = [:] // artistId -> albums
@@ -24,6 +25,7 @@ actor MetadataCache {
     private var artistsCacheTime: Date?
     private var playlistsCacheTime: Date?
     private var tracksCacheTime: Date?
+    private var radiosCacheTime: Date?
 
     // Cache expiry (1 hour for library data)
     private let cacheExpiry: TimeInterval = 3600
@@ -109,6 +111,23 @@ actor MetadataCache {
         Task { await saveToDisk(tracks, filename: "tracks.json") }
     }
 
+    // MARK: - Radios
+
+    func getRadios() -> [Radio]? {
+        guard let cache = radiosCache,
+              let cacheTime = radiosCacheTime,
+              Date().timeIntervalSince(cacheTime) < cacheExpiry else {
+            return nil
+        }
+        return cache
+    }
+
+    func setRadios(_ radios: [Radio]) {
+        radiosCache = radios
+        radiosCacheTime = Date()
+        Task { await saveToDisk(radios, filename: "radios.json") }
+    }
+
     // MARK: - Album Tracks
 
     func getAlbumTracks(albumId: String) -> [Track]? {
@@ -158,6 +177,7 @@ actor MetadataCache {
         artistsCache = nil
         playlistsCache = nil
         tracksCache = nil
+        radiosCache = nil
         albumTracksCache.removeAll()
         playlistTracksCache.removeAll()
         artistAlbumsCache.removeAll()
@@ -166,6 +186,7 @@ actor MetadataCache {
         artistsCacheTime = nil
         playlistsCacheTime = nil
         tracksCacheTime = nil
+        radiosCacheTime = nil
 
         // Clear disk cache
         try? fileManager.removeItem(at: cacheDirectory)
@@ -178,6 +199,7 @@ actor MetadataCache {
         artistsCacheTime = nil
         playlistsCacheTime = nil
         tracksCacheTime = nil
+        radiosCacheTime = nil
     }
 
     // MARK: - Disk Persistence
@@ -225,6 +247,11 @@ actor MetadataCache {
         if let tracks: [Track] = loadFromDisk([Track].self, filename: "tracks.json") {
             tracksCache = tracks
             tracksCacheTime = Date()
+        }
+
+        if let radios: [Radio] = loadFromDisk([Radio].self, filename: "radios.json") {
+            radiosCache = radios
+            radiosCacheTime = Date()
         }
 
         print("[MetadataCache] Loaded caches from disk")

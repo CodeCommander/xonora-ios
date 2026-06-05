@@ -9,12 +9,13 @@ class LibraryViewModel: ObservableObject {
     @Published var artists: [Artist] = []
     @Published var playlists: [Playlist] = []
     @Published var tracks: [Track] = []
+    @Published var radios: [Radio] = []
     @Published var recentlyPlayed: [RecentlyPlayedItem] = []
     @Published var isLoading = false
     @Published var isLoadingRecent = false
     @Published var errorMessage: String?
     @Published var searchQuery = ""
-    @Published var searchResults: (albums: [Album], artists: [Artist], tracks: [Track], playlists: [Playlist]) = ([], [], [], [])
+    @Published var searchResults: (albums: [Album], artists: [Artist], tracks: [Track], playlists: [Playlist], radios: [Radio]) = ([], [], [], [], [])
     @Published var isSearching = false
     private var isNetworkFetching = false
 
@@ -37,7 +38,7 @@ class LibraryViewModel: ObservableObject {
                 guard let self = self else { return }
                 if query.isEmpty {
                     Task {
-                        self.searchResults = ([], [], [], [])
+                        self.searchResults = ([], [], [], [], [])
                         self.isSearching = false
                     }
                 } else {
@@ -64,6 +65,12 @@ class LibraryViewModel: ObservableObject {
                 self.playlists = playlists
                 self.tracks = tracks
                 print("[LibraryViewModel] Loaded from cache")
+            }
+
+            // Radios are cached and loaded independently — an empty radio cache
+            // shouldn't suppress the cache hit for the rest of the library.
+            if let cachedRadios = await cache.getRadios() {
+                self.radios = cachedRadios
             }
         }
 
@@ -110,6 +117,14 @@ class LibraryViewModel: ObservableObject {
                 await self.cache.setArtists(sortedArtists)
                 await self.cache.setPlaylists(sortedPlaylists)
                 await self.cache.setTracks(sortedTracks)
+            }
+
+            // Radio is best-effort: a server without a radio provider (or an older
+            // server that rejects the command) shouldn't fail the library load.
+            if let fetchedRadios = try? await client.fetchRadios() {
+                let sortedRadios = fetchedRadios.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+                self.radios = sortedRadios
+                Task.detached(priority: .utility) { await self.cache.setRadios(sortedRadios) }
             }
 
             print("[LibraryViewModel] Fetched and cached library")
@@ -256,7 +271,7 @@ class LibraryViewModel: ObservableObject {
 
     func clearSearch() {
         searchQuery = ""
-        searchResults = ([], [], [], [])
+        searchResults = ([], [], [], [], [])
         isSearching = false
     }
 

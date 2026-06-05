@@ -42,6 +42,8 @@ struct ProviderIcon: View {
             return "server.rack"
         case let p where p.contains("jellyfin"):
             return "play.square.stack"
+        case let p where p.contains("tunein") || p.contains("radiobrowser") || p.contains("radio"):
+            return "dot.radiowaves.left.and.right"
         default:
             return "music.note"
         }
@@ -106,6 +108,10 @@ extension String {
             return "Navidrome"
         case let p where p.contains("jellyfin"):
             return "Jellyfin"
+        case let p where p.contains("tunein"):
+            return "TuneIn"
+        case let p where p.contains("radiobrowser"):
+            return "Radio Browser"
         default:
             // Clean up the provider string (remove instance IDs like spotify--KwvyDBMn)
             if let dashRange = self.range(of: "--") {

@@ -448,6 +448,17 @@ class XonoraClient: NSObject, ObservableObject {
         }.value
     }
 
+    func fetchRadios() async throws -> [Radio] {
+        let data = try await sendCommand("music/radios/library_items")
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let items = (json["result"] as? [String: Any])?["items"] as? [[String: Any]] ?? json["result"] as? [[String: Any]] else { return [] }
+
+        return await Task.detached(priority: .userInitiated) {
+            let itemsData = (try? JSONSerialization.data(withJSONObject: items)) ?? Data()
+            return (try? JSONDecoder().decode([Radio].self, from: itemsData)) ?? []
+        }.value
+    }
+
     /// Fetches recently played items from the server
     /// - Parameters:
     ///   - limit: Maximum number of items to return (default: 20)
@@ -523,14 +534,15 @@ class XonoraClient: NSObject, ObservableObject {
         return (try? JSONDecoder().decode([Track].self, from: resultData)) ?? []
     }
 
-    func search(query: String) async throws -> (albums: [Album], artists: [Artist], tracks: [Track], playlists: [Playlist]) {
-        let data = try await sendCommand("music/search", args: ["search_query": query, "media_types": ["album", "artist", "track", "playlist"], "limit": 20])
-        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any], let result = json["result"] as? [String: Any] else { return ([], [], [], []) }
+    func search(query: String) async throws -> (albums: [Album], artists: [Artist], tracks: [Track], playlists: [Playlist], radios: [Radio]) {
+        let data = try await sendCommand("music/search", args: ["search_query": query, "media_types": ["album", "artist", "track", "playlist", "radio"], "limit": 20])
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any], let result = json["result"] as? [String: Any] else { return ([], [], [], [], []) }
         let decoder = JSONDecoder()
         var albums: [Album] = []
         var artists: [Artist] = []
         var tracks: [Track] = []
         var playlists: [Playlist] = []
+        var radios: [Radio] = []
 
         if let albumsArray = result["albums"] as? [[String: Any]] {
             let albumsData = try JSONSerialization.data(withJSONObject: albumsArray)
@@ -548,7 +560,12 @@ class XonoraClient: NSObject, ObservableObject {
             let playlistsData = try JSONSerialization.data(withJSONObject: playlistsArray)
             playlists = (try? decoder.decode([Playlist].self, from: playlistsData)) ?? []
         }
-        return (albums, artists, tracks, playlists)
+        // MA serializes radio search hits under the singular "radio" key.
+        if let radiosArray = result["radio"] as? [[String: Any]] {
+            let radiosData = try JSONSerialization.data(withJSONObject: radiosArray)
+            radios = (try? decoder.decode([Radio].self, from: radiosData)) ?? []
+        }
+        return (albums, artists, tracks, playlists, radios)
     }
 
     func addToLibrary(itemId: String, provider: String) async throws {

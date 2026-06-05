@@ -248,6 +248,19 @@ class PlayerViewModel: ObservableObject {
         playerManager.playAlbum(tracks, startingAt: index)
     }
 
+    /// Plays a radio station on the current MA player. A station is a single
+    /// continuous stream with no track list, so it goes straight to the queue
+    /// rather than through the local PlayerManager track pipeline.
+    func playRadio(_ radio: Radio) {
+        Task {
+            do {
+                try await client.playMedia(uris: [radio.uri], queueOption: "play")
+            } catch {
+                self.playbackError = error.localizedDescription
+            }
+        }
+    }
+
     func togglePlayPause() {
         playerManager.togglePlayPause()
     }

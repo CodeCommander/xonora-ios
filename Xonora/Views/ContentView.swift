@@ -513,6 +513,7 @@ enum SearchFilter: String, CaseIterable {
     case artists = "Artists"
     case albums = "Albums"
     case playlists = "Playlists"
+    case radios = "Radio"
 }
 
 struct SearchView: View {
@@ -524,7 +525,8 @@ struct SearchView: View {
         !libraryViewModel.searchResults.albums.isEmpty ||
         !libraryViewModel.searchResults.artists.isEmpty ||
         !libraryViewModel.searchResults.tracks.isEmpty ||
-        !libraryViewModel.searchResults.playlists.isEmpty
+        !libraryViewModel.searchResults.playlists.isEmpty ||
+        !libraryViewModel.searchResults.radios.isEmpty
     }
 
     var body: some View {
@@ -539,7 +541,7 @@ struct SearchView: View {
                     ContentUnavailableView(
                         "Search Music",
                         systemImage: "magnifyingglass",
-                        description: Text("Search for albums, artists, songs, and playlists")
+                        description: Text("Search for albums, artists, songs, playlists, and radio")
                     )
                 } else if libraryViewModel.isSearching {
                     Spacer()
@@ -553,7 +555,7 @@ struct SearchView: View {
             }
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
-            .searchable(text: $libraryViewModel.searchQuery, placement: .navigationBarDrawer(displayMode: .always), prompt: "Albums, Artists, Songs, Playlists")
+            .searchable(text: $libraryViewModel.searchQuery, placement: .navigationBarDrawer(displayMode: .always), prompt: "Albums, Artists, Songs, Playlists, Radio")
         }
         .ignoresSafeArea(.container, edges: .bottom)
     }
@@ -679,6 +681,20 @@ struct SearchView: View {
                                     }
                                 }
                             }
+                        }
+                    }
+                }
+            }
+
+            // Radio section
+            if (selectedFilter == .all || selectedFilter == .radios) && !libraryViewModel.searchResults.radios.isEmpty {
+                Section("Radio") {
+                    ForEach(libraryViewModel.searchResults.radios) { radio in
+                        RadioRow(
+                            radio: radio,
+                            isPlaying: playerViewModel.currentTrack?.itemId == radio.itemId
+                        ) {
+                            playerViewModel.playRadio(radio)
                         }
                     }
                 }

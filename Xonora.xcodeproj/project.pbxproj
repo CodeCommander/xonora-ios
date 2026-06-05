@@ -39,6 +39,8 @@
 		AAA00033 /* ProviderIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00033 /* ProviderIcon.swift */; };
 		AAA00034 /* FilterChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00034 /* FilterChip.swift */; };
 		AAA00035 /* ToastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00035 /* ToastView.swift */; };
+		AAA00051 /* Radio.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00051 /* Radio.swift */; };
+		AAA00052 /* RadioRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00052 /* RadioRow.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -140,6 +142,8 @@
 		BBB00033 /* ProviderIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderIcon.swift; sourceTree = "<group>"; };
 		BBB00034 /* FilterChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterChip.swift; sourceTree = "<group>"; };
 		BBB00035 /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
+		BBB00051 /* Radio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Radio.swift; sourceTree = "<group>"; };
+		BBB00052 /* RadioRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadioRow.swift; sourceTree = "<group>"; };
 		CCC00001 /* Xonora.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Xonora.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -454,6 +458,7 @@
 				BBB00013 /* Player.swift */,
 				BBB00028 /* Playlist.swift */,
 				BBB00050 /* RecentlyPlayedItem.swift */,
+				BBB00051 /* Radio.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -495,6 +500,7 @@
 				BBB00033 /* ProviderIcon.swift */,
 				BBB00035 /* ToastView.swift */,
 				BBB00008 /* TrackRow.swift */,
+				BBB00052 /* RadioRow.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -610,6 +616,8 @@
 				AAA00033 /* ProviderIcon.swift in Sources */,
 				AAA00034 /* FilterChip.swift in Sources */,
 				AAA00035 /* ToastView.swift in Sources */,
+				AAA00051 /* Radio.swift in Sources */,
+				AAA00052 /* RadioRow.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
