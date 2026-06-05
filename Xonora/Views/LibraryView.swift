@@ -127,6 +127,17 @@ struct LibraryView: View {
                         count: libraryViewModel.tracks.count
                     )
                 }
+
+                NavigationLink {
+                    RadioListView()
+                } label: {
+                    LibraryMenuRow(
+                        icon: "dot.radiowaves.left.and.right",
+                        iconColor: .teal,
+                        title: "Radio",
+                        count: libraryViewModel.radios.count
+                    )
+                }
             }
 
             // Recently Added Section
@@ -347,6 +358,46 @@ struct SongsListView: View {
             .padding(.bottom, playerViewModel.hasTrack ? 120 : 20)
         }
         .navigationTitle("Songs")
+        .navigationBarTitleDisplayMode(.large)
+        .background(Color(UIColor.systemGroupedBackground))
+    }
+}
+
+// MARK: - Radio List View
+
+struct RadioListView: View {
+    @EnvironmentObject var libraryViewModel: LibraryViewModel
+    @EnvironmentObject var playerViewModel: PlayerViewModel
+
+    var body: some View {
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                if libraryViewModel.radios.isEmpty {
+                    ContentUnavailableView(
+                        "No Radio Stations",
+                        systemImage: "dot.radiowaves.left.and.right",
+                        description: Text("Favorite a station in Music Assistant to see it here, or find one from Search.")
+                    )
+                    .padding(.top, 100)
+                } else {
+                    ForEach(libraryViewModel.radios) { radio in
+                        RadioRow(
+                            radio: radio,
+                            isPlaying: playerViewModel.currentTrack?.itemId == radio.itemId
+                        ) {
+                            playerViewModel.playRadio(radio)
+                        }
+
+                        if radio.id != libraryViewModel.radios.last?.id {
+                            Divider()
+                                .padding(.leading, 78)
+                        }
+                    }
+                }
+            }
+            .padding(.bottom, playerViewModel.hasTrack ? 120 : 20)
+        }
+        .navigationTitle("Radio")
         .navigationBarTitleDisplayMode(.large)
         .background(Color(UIColor.systemGroupedBackground))
     }
