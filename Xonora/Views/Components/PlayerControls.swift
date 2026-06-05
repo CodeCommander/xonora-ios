@@ -82,8 +82,10 @@ struct PlayerControls: View {
                 }
             }
 
-            // Main controls
-            HStack(spacing: 40) {
+            // Main controls. Distribute with Spacers (rather than a fixed
+            // HStack spacing) so the row scales to the available width instead
+            // of overflowing on narrow devices like the iPhone 12 mini.
+            HStack {
                 Button {
                     playerManager.toggleShuffle()
                 } label: {
@@ -91,6 +93,8 @@ struct PlayerControls: View {
                         .font(.title3)
                         .foregroundColor(playerManager.shuffleEnabled ? .accentColor : .secondary)
                 }
+
+                Spacer(minLength: 0)
 
                 Button {
                     playerManager.previous()
@@ -100,6 +104,8 @@ struct PlayerControls: View {
                         .foregroundColor(.primary)
                 }
 
+                Spacer(minLength: 0)
+
                 Button {
                     playerManager.togglePlayPause()
                 } label: {
@@ -108,6 +114,8 @@ struct PlayerControls: View {
                         .foregroundColor(.primary)
                 }
 
+                Spacer(minLength: 0)
+
                 Button {
                     playerManager.next()
                 } label: {
@@ -115,6 +123,8 @@ struct PlayerControls: View {
                         .font(.title)
                         .foregroundColor(.primary)
                 }
+
+                Spacer(minLength: 0)
 
                 Button {
                     playerManager.cycleRepeatMode()

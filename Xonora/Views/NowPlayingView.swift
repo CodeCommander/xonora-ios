@@ -1,5 +1,14 @@
 import SwiftUI
 
+/// Reports the album artwork's rendered width up to `NowPlayingView` so the
+/// track info and controls can be pinned to the same width.
+private struct ArtworkWidthKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
 struct NowPlayingView: View {
     @EnvironmentObject var playerViewModel: PlayerViewModel
     @ObservedObject private var playerManager = PlayerManager.shared
@@ -10,9 +19,16 @@ struct NowPlayingView: View {
     @State private var dragOffset: CGFloat = 0
     @State private var showQueue = false
 
+    // The artwork's *rendered* width. On short screens the album art is
+    // height-constrained and ends up narrower than the content box, so we
+    // measure it and pin the track info + controls to the same width — that
+    // keeps the progress bar and transport aligned under the artwork instead
+    // of overhanging it.
+    @State private var artworkWidth: CGFloat = 0
+
     // Single horizontal inset shared by artwork, track info, and controls so the
     // progress bar and transport align under the artwork instead of overhanging it.
-    private let contentMargin: CGFloat = 32
+    private let contentMargin: CGFloat = 24
 
     var body: some View {
         VStack(spacing: 0) {
@@ -31,14 +47,17 @@ struct NowPlayingView: View {
 
             // Track info
             trackInfo
+                .frame(maxWidth: artworkWidth > 0 ? artworkWidth : .infinity)
                 .padding(.horizontal, contentMargin)
                 .padding(.bottom, 24)
 
             // Controls
             PlayerControls(playerManager: playerManager, size: .full)
+                .frame(maxWidth: artworkWidth > 0 ? artworkWidth : .infinity)
                 .padding(.horizontal, contentMargin)
                 .padding(.bottom, 24)
         }
+        .onPreferenceChange(ArtworkWidthKey.self) { artworkWidth = $0 }
         // Cap content width so the layout stays balanced on large phones/iPad,
         // then center that capped column on screen.
         .frame(maxWidth: 540)
@@ -155,6 +174,11 @@ struct NowPlayingView: View {
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        .background(
+            GeometryReader { proxy in
+                Color.clear.preference(key: ArtworkWidthKey.self, value: proxy.size.width)
+            }
+        )
         .shadow(color: .black.opacity(0.5), radius: 30, x: 0, y: 20)
         .scaleEffect(playerManager.isPlaying ? 1.0 : 0.95)
         .animation(.easeInOut(duration: 0.3), value: playerManager.isPlaying)
