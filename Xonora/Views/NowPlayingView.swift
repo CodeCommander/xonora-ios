@@ -28,7 +28,7 @@ struct NowPlayingView: View {
 
     // Single horizontal inset shared by artwork, track info, and controls so the
     // progress bar and transport align under the artwork instead of overhanging it.
-    private let contentMargin: CGFloat = 32
+    private let contentMargin: CGFloat = 24
 
     var body: some View {
         VStack(spacing: 0) {

@@ -5,6 +5,9 @@ struct Track: Identifiable, Codable, Hashable {
     let provider: String
     let name: String
     let version: String?
+    /// MA media type ("track", "radio", …). Used to tell live streams apart from
+    /// seekable tracks, since radio carries no fixed/seekable duration.
+    let mediaType: String?
     let duration: TimeInterval?
     let trackNumber: Int?
     let discNumber: Int?
@@ -54,6 +57,7 @@ struct Track: Identifiable, Codable, Hashable {
         case provider
         case name
         case version
+        case mediaType = "media_type"
         case duration
         case trackNumber = "track_number"
         case discNumber = "disc_number"
