@@ -1113,6 +1113,8 @@ class PlayerManager: ObservableObject {
             MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
             // Keep the system playback state in lockstep so iOS keeps the slot (XON-010).
             MPNowPlayingInfoCenter.default().playbackState = self.systemPlaybackState
+            // Live streams can't be scrubbed — drop the lock-screen seek bar for them.
+            MPRemoteCommandCenter.shared().changePlaybackPositionCommand.isEnabled = !self.isLiveStream
         }
     }
 
@@ -1151,6 +1153,16 @@ class PlayerManager: ObservableObject {
             return true
         }
         return false
+    }
+
+    /// True when the current item is a live stream (radio): MA reports it as
+    /// media_type "radio" and it carries no fixed, seekable duration. Such items
+    /// have no meaningful "time remaining" and can't be scrubbed. The duration
+    /// fallback covers payloads that omit the media type.
+    var isLiveStream: Bool {
+        guard currentTrack != nil else { return false }
+        if currentTrack?.mediaType == "radio" { return true }
+        return duration <= 0
     }
 
     var progress: Double {

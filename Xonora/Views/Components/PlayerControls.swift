@@ -59,15 +59,21 @@ struct PlayerControls: View {
 
     private var fullControls: some View {
         VStack(spacing: 24) {
-            // Progress bar
+            // Progress bar. Live streams (radio) have no fixed duration: show a
+            // static, non-scrubbable track and a LIVE badge instead of a
+            // (negative) time-remaining readout, while still counting elapsed time.
             VStack(spacing: 4) {
-                ProgressSlider(
-                    value: Binding(
-                        get: { playerManager.currentTime },
-                        set: { playerManager.seek(to: $0) }
-                    ),
-                    range: 0...max(playerManager.duration, 1)
-                )
+                if playerManager.isLiveStream {
+                    liveTrack
+                } else {
+                    ProgressSlider(
+                        value: Binding(
+                            get: { playerManager.currentTime },
+                            set: { playerManager.seek(to: $0) }
+                        ),
+                        range: 0...max(playerManager.duration, 1)
+                    )
+                }
 
                 HStack {
                     Text(formatTime(playerManager.currentTime))
@@ -76,9 +82,13 @@ struct PlayerControls: View {
 
                     Spacer()
 
-                    Text("-\(formatTime(playerManager.duration - playerManager.currentTime))")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    if playerManager.isLiveStream {
+                        liveBadge
+                    } else {
+                        Text("-\(formatTime(playerManager.duration - playerManager.currentTime))")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
 
@@ -203,6 +213,28 @@ struct PlayerControls: View {
                 }
             }
         }
+    }
+
+    /// Static, non-interactive stand-in for the scrubber on live streams.
+    /// Sized to match `ProgressSlider`'s height so the layout doesn't shift.
+    private var liveTrack: some View {
+        Capsule()
+            .fill(Color.secondary.opacity(0.3))
+            .frame(height: 4)
+            .frame(maxWidth: .infinity)
+            .frame(height: 20)
+    }
+
+    private var liveBadge: some View {
+        HStack(spacing: 5) {
+            Circle()
+                .fill(Color.red)
+                .frame(width: 6, height: 6)
+            Text("LIVE")
+                .font(.caption)
+                .fontWeight(.semibold)
+        }
+        .foregroundColor(.secondary)
     }
 
     @ViewBuilder
