@@ -55,8 +55,14 @@ final class LiveActivityController {
     func reconcile() {
         guard #available(iOS 16.1, *) else { return }
 
-        // Can't show a Live Activity if the user has them disabled system-wide.
-        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        // Can't show a Live Activity if the user has them disabled. Surface this loudly:
+        // a silent bail here looks identical to a broken feature. The toggle lives at
+        // Settings ▸ Xonora ▸ Live Activities (per-app) and Settings ▸ Face ID &
+        // Passcode ▸ Live Activities (system-wide).
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else {
+            print("[LiveActivity] Skipping: areActivitiesEnabled == false (enable in Settings ▸ Xonora ▸ Live Activities)")
+            return
+        }
 
         let manager = PlayerManager.shared
         let player = XonoraClient.shared.currentPlayer

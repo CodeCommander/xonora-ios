@@ -795,9 +795,23 @@ class PlayerManager: ObservableObject {
                         self.currentTrack = tracks[self.currentIndex]
                     }
 
-                    // Update playback state based on server state, and keep the
-                    // progress timer + now-playing card in sync with it.
-                    switch state.state {
+                    // Update playback state, and keep the progress timer + now-playing
+                    // card in sync with it. Prefer the *player's* own live state: the
+                    // queue's get_queue `state` comes back empty/idle for radio and some
+                    // providers (observed with KMHD on a universal_player), which would
+                    // wrongly pin us at .stopped — suppressing the now-playing card and
+                    // the remote-speaker Live Activity when you retarget to a speaker
+                    // that's already playing. Fall back to the queue state only when the
+                    // player reports nothing definitive.
+                    let resolvedState: String
+                    switch player.state {
+                    case .playing?: resolvedState = "playing"
+                    case .paused?:  resolvedState = "paused"
+                    case .idle?, .off?: resolvedState = "stopped"
+                    case .unknown?, nil: resolvedState = state.state
+                    }
+
+                    switch resolvedState {
                     case "playing":
                         self.playbackState = .playing
                         self.startProgressTimer()
