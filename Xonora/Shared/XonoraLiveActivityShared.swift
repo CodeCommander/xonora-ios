@@ -13,7 +13,20 @@ enum XonoraShared {
     /// Activity (and its control intents, which run outside the app's process) can
     /// reach them. Must match the `com.apple.security.application-groups` entitlement
     /// on both targets.
-    static let appGroupId = "group.com.ma.xonora"
+    ///
+    /// Resolved at runtime from the `XonoraAppGroupID` Info.plist key, which the build
+    /// injects from the `APP_GROUP_ID` build setting (`group.$(APP_BUNDLE_ID)`). That
+    /// keeps it on whatever bundle namespace we sign under — e.g. `group.com.chibinet.xonora`
+    /// — without hardcoding a personal value. `Bundle.main` is the app in the app process
+    /// and the widget extension in the intent/widget process; both carry the same key, so
+    /// the two sides agree. The literal fallback only applies if the key is somehow absent.
+    static var appGroupId: String {
+        if let id = Bundle.main.object(forInfoDictionaryKey: "XonoraAppGroupID") as? String,
+           !id.isEmpty {
+            return id
+        }
+        return "group.com.ma.xonora"
+    }
 
     /// Keys the app mirrors into the App Group defaults so the control intents can
     /// reach Music Assistant while the app is suspended. The string values match the

@@ -27,6 +27,7 @@ Pods/
 .swiftpm/
 
 # Local configuration
+Config/Local.xcconfig
 .claude/
 CLAUDE_CODE_PROMPT.md
 CLAUDE.md

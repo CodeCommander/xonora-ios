@@ -1,0 +1,16 @@
+// Per-developer signing overrides.
+//
+// Copy this file to "Local.xcconfig" (same directory) and fill in your values.
+// Config/Local.xcconfig is gitignored, so nothing here gets committed and your
+// settings won't conflict with anyone else's.
+
+// Your 10-character Apple Developer Team ID.
+// Find it in Xcode > Settings > Accounts (select your team), or at
+// developer.apple.com > Account > Membership details.
+DEVELOPMENT_TEAM = ABCDE12345
+
+// Optional. Only needed if the default bundle id (com.ma.xonora) is registered
+// to another team and won't sign under yours — e.g. with a free/personal
+// Apple account. Use a reverse-DNS identifier you control. The widget id is
+// derived automatically ($(APP_BUNDLE_ID).XonoraWidget).
+// APP_BUNDLE_ID = com.yourname.xonora

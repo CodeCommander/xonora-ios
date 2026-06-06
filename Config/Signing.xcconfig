@@ -1,0 +1,37 @@
+// Shared signing & identity configuration for Xonora.
+//
+// Per-developer values (your Apple Developer Team ID, optionally a custom
+// bundle identifier) live in Config/Local.xcconfig, which is gitignored so it
+// never gets committed. Copy Config/Local.xcconfig.example to
+// Config/Local.xcconfig and fill in your details.
+//
+// The fallback values below are used when Local.xcconfig is absent (e.g. on a
+// fresh clone or CI). The `#include?` at the bottom is optional: the build
+// still works without a Local.xcconfig — and because it comes last, any value
+// you set there overrides the fallbacks here.
+
+// --- Fallback values ---
+
+// Empty by default: with no team set, Xcode falls back to "no team" / manual
+// selection. Set DEVELOPMENT_TEAM in Local.xcconfig to your 10-char Team ID.
+DEVELOPMENT_TEAM =
+
+// App bundle identifier. Override APP_BUNDLE_ID in Local.xcconfig if
+// com.ma.xonora is registered to another team and won't sign under yours.
+APP_BUNDLE_ID = com.ma.xonora
+
+// Widget id is always derived from the app id; no need to set it directly.
+WIDGET_BUNDLE_ID = $(APP_BUNDLE_ID).XonoraWidget
+
+// App Group id, derived from the app id so it tracks whatever bundle namespace
+// you sign under (group.com.chibinet.xonora locally, group.com.ma.xonora as the
+// committed fallback). com.ma.* is owned by another team, so a personal account
+// can't register group.com.ma.xonora — deriving it from APP_BUNDLE_ID keeps the
+// group on a namespace you control. Both targets' entitlements reference
+// $(APP_GROUP_ID), and each target's Info.plist exposes it as XonoraAppGroupID so
+// XonoraShared.appGroupId can read the resolved value at runtime (app + widget
+// must agree on the same group).
+APP_GROUP_ID = group.$(APP_BUNDLE_ID)
+
+// --- Per-developer overrides (win over the fallbacks above) ---
+#include? "Local.xcconfig"

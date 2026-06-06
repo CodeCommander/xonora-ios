@@ -18,7 +18,6 @@
 		AAA00008 /* TrackRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00008 /* TrackRow.swift */; };
 		AAA00009 /* PlayerControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00009 /* PlayerControls.swift */; };
 		AAA00010 /* Track.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00010 /* Track.swift */; };
-		AAA00050 /* RecentlyPlayedItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00050 /* RecentlyPlayedItem.swift */; };
 		AAA00011 /* Album.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00011 /* Album.swift */; };
 		AAA00012 /* Artist.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00012 /* Artist.swift */; };
 		AAA00013 /* Player.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00013 /* Player.swift */; };
@@ -39,6 +38,7 @@
 		AAA00033 /* ProviderIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00033 /* ProviderIcon.swift */; };
 		AAA00034 /* FilterChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00034 /* FilterChip.swift */; };
 		AAA00035 /* ToastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00035 /* ToastView.swift */; };
+		AAA00050 /* RecentlyPlayedItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00050 /* RecentlyPlayedItem.swift */; };
 		AAA00051 /* Radio.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00051 /* Radio.swift */; };
 		AAA00052 /* RadioRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00052 /* RadioRow.swift */; };
 		AAA00060 /* LiveActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00062 /* LiveActivityController.swift */; };
@@ -51,6 +51,30 @@
 		AAA00067 /* MARemoteControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00061 /* MARemoteControl.swift */; };
 		AAA00068 /* XonoraWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CCC00002 /* XonoraWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		NNN00001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = JJJ00001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FFF00002;
+			remoteInfo = XonoraWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		MMM00001 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				AAA00068 /* XonoraWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		1D861CD22F0FB2DD007D0C6A /* Color+Xonora.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Xonora.swift"; sourceTree = "<group>"; };
@@ -143,7 +167,6 @@
 		BBB00026 /* MetadataCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetadataCache.swift; sourceTree = "<group>"; };
 		BBB00027 /* ImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageCache.swift; sourceTree = "<group>"; };
 		BBB00028 /* Playlist.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Playlist.swift; sourceTree = "<group>"; };
-		BBB00050 /* RecentlyPlayedItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentlyPlayedItem.swift; sourceTree = "<group>"; };
 		BBB00029 /* PlaylistDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistDetailView.swift; sourceTree = "<group>"; };
 		BBB00030 /* PlaylistGridItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistGridItem.swift; sourceTree = "<group>"; };
 		BBB00031 /* Color+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Extensions.swift"; sourceTree = "<group>"; };
@@ -151,9 +174,9 @@
 		BBB00033 /* ProviderIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderIcon.swift; sourceTree = "<group>"; };
 		BBB00034 /* FilterChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterChip.swift; sourceTree = "<group>"; };
 		BBB00035 /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
+		BBB00050 /* RecentlyPlayedItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentlyPlayedItem.swift; sourceTree = "<group>"; };
 		BBB00051 /* Radio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Radio.swift; sourceTree = "<group>"; };
 		BBB00052 /* RadioRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadioRow.swift; sourceTree = "<group>"; };
-		CCC00001 /* Xonora.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Xonora.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BBB00060 /* XonoraLiveActivityShared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XonoraLiveActivityShared.swift; sourceTree = "<group>"; };
 		BBB00061 /* MARemoteControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MARemoteControl.swift; sourceTree = "<group>"; };
 		BBB00062 /* LiveActivityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityController.swift; sourceTree = "<group>"; };
@@ -163,7 +186,10 @@
 		BBB00066 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		BBB00067 /* XonoraWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = XonoraWidget.entitlements; sourceTree = "<group>"; };
 		BBB00068 /* Xonora.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Xonora.entitlements; sourceTree = "<group>"; };
+		CCC00001 /* Xonora.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Xonora.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CCC00002 /* XonoraWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = XonoraWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		FED00001 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
+		FED00002 /* Local.xcconfig.example */ = {isa = PBXFileReference; lastKnownFileType = text; path = Local.xcconfig.example; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -183,20 +209,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		MMM00001 /* Embed Foundation Extensions */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 13;
-			files = (
-				AAA00068 /* XonoraWidgetExtension.appex in Embed Foundation Extensions */,
-			);
-			name = "Embed Foundation Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXGroup section */
 		1D861CD62F110B8C007D0C6A /* workflows */ = {
@@ -459,6 +471,7 @@
 			children = (
 				EEE00002 /* Xonora */,
 				EEE00010 /* XonoraWidget */,
+				FED00010 /* Config */,
 				1D861D2B2F110C3D007D0C6A /* Frameworks */,
 				EEE00003 /* Products */,
 			);
@@ -580,6 +593,15 @@
 			path = XonoraWidget;
 			sourceTree = "<group>";
 		};
+		FED00010 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				FED00001 /* Signing.xcconfig */,
+				FED00002 /* Local.xcconfig.example */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -659,24 +681,6 @@
 		};
 /* End PBXProject section */
 
-/* Begin PBXContainerItemProxy section */
-		NNN00001 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = JJJ00001 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = FFF00002;
-			remoteInfo = XonoraWidgetExtension;
-		};
-/* End PBXContainerItemProxy section */
-
-/* Begin PBXTargetDependency section */
-		OOO00001 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = FFF00002 /* XonoraWidgetExtension */;
-			targetProxy = NNN00001 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
-
 /* Begin PBXResourcesBuildPhase section */
 		III00001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
@@ -752,9 +756,18 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		OOO00001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FFF00002 /* XonoraWidgetExtension */;
+			targetProxy = NNN00001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
 		KKK00001 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = FED00001 /* Signing.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -788,7 +801,6 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = RH4TEEE3RP;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -820,6 +832,7 @@
 		};
 		KKK00002 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = FED00001 /* Signing.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -853,7 +866,6 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = RH4TEEE3RP;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -878,18 +890,19 @@
 		};
 		LLL00001 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = FED00001 /* Signing.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Xonora/Xonora.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = VS3FLTY94C;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Xonora/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Xonora;
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Xonora needs to connect to your Music Assistant server on your local network.";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -900,7 +913,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.4;
-				PRODUCT_BUNDLE_IDENTIFIER = com.ma.xonora;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_ID)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -910,19 +923,20 @@
 		};
 		LLL00002 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = FED00001 /* Signing.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_ENTITLEMENTS = Xonora/Xonora.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = VS3FLTY94C;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Xonora/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Xonora;
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Xonora needs to connect to your Music Assistant server on your local network.";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -933,7 +947,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.4;
-				PRODUCT_BUNDLE_IDENTIFIER = com.ma.xonora;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_ID)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -944,12 +958,12 @@
 		};
 		LLL00003 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = FED00001 /* Signing.xcconfig */;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = XonoraWidget/XonoraWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = VS3FLTY94C;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = XonoraWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Xonora;
@@ -961,7 +975,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0.4;
-				PRODUCT_BUNDLE_IDENTIFIER = com.ma.xonora.XonoraWidget;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(WIDGET_BUNDLE_ID)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -972,13 +986,13 @@
 		};
 		LLL00004 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = FED00001 /* Signing.xcconfig */;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = XonoraWidget/XonoraWidget.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = VS3FLTY94C;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = XonoraWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Xonora;
@@ -990,7 +1004,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0.4;
-				PRODUCT_BUNDLE_IDENTIFIER = com.ma.xonora.XonoraWidget;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(WIDGET_BUNDLE_ID)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
