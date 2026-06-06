@@ -1060,6 +1060,9 @@ class PlayerManager: ObservableObject {
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
         // Drive the system playback state to .stopped so iOS relinquishes the slot cleanly.
         MPNowPlayingInfoCenter.default().playbackState = .stopped
+        // Mirror to the remote-speaker Live Activity (Mode R): a cleared card means
+        // stopped/idle, which reconcile() resolves to ending any running activity.
+        LiveActivityController.shared.reconcile()
     }
 
     /// Maps our internal playback state to the system's now-playing state.
@@ -1115,6 +1118,10 @@ class PlayerManager: ObservableObject {
             MPNowPlayingInfoCenter.default().playbackState = self.systemPlaybackState
             // Live streams can't be scrubbed — drop the lock-screen seek bar for them.
             MPRemoteCommandCenter.shared().changePlaybackPositionCommand.isEnabled = !self.isLiveStream
+            // Mirror this refresh to the remote-speaker Live Activity (Mode R). This one
+            // hook covers queue events, play, seek, and fetchQueueFromServer; reconcile()
+            // decides whether to start/update/end based on mode + state.
+            LiveActivityController.shared.reconcile()
         }
     }
 

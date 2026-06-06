@@ -132,6 +132,10 @@ class PlayerViewModel: ObservableObject {
         } else {
             sendspinEnabled = UserDefaults.standard.bool(forKey: sendspinEnabledKey)
         }
+
+        // Mirror to the App Group so the Live Activity's control intents can reach MA
+        // while the app is suspended.
+        LiveActivityController.shared.mirrorConnectionSettings(serverURL: serverURL, accessToken: accessToken)
     }
 
     func connectToServer() {
@@ -148,6 +152,7 @@ class PlayerViewModel: ObservableObject {
         let url = Self.normalizeServerURL(serverURL)
         UserDefaults.standard.set(url, forKey: serverURLKey)
         UserDefaults.standard.set(accessToken, forKey: accessTokenKey)
+        LiveActivityController.shared.mirrorConnectionSettings(serverURL: url, accessToken: accessToken)
 
         serverURL = url
 
@@ -199,12 +204,14 @@ class PlayerViewModel: ObservableObject {
     func updateServerURL(_ url: String) {
         serverURL = Self.normalizeServerURL(url)
         UserDefaults.standard.set(serverURL, forKey: serverURLKey)
+        LiveActivityController.shared.mirrorConnectionSettings(serverURL: serverURL, accessToken: accessToken)
     }
 
     func updateCredentials(accessToken: String) {
         let trimmedToken = accessToken.trimmingCharacters(in: .whitespacesAndNewlines)
         self.accessToken = trimmedToken
         UserDefaults.standard.set(trimmedToken, forKey: accessTokenKey)
+        LiveActivityController.shared.mirrorConnectionSettings(serverURL: serverURL, accessToken: trimmedToken)
     }
 
     /// Default Music Assistant HTTP port, assumed when the user omits one.
