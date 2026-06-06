@@ -89,8 +89,13 @@ struct XonoraApp: App {
     private func configureAudioSession() {
         do {
             let audioSession = AVAudioSession.sharedInstance()
+            // Pre-set the category so SendspinKit can activate the session quickly when
+            // the phone actually produces audio (Mode P). We deliberately do NOT activate
+            // it here: in Mode R (remote control) the phone produces no audio and must
+            // hold no active/contending session, or merely opening the app to control a
+            // speaker would interrupt a podcast already playing in the user's AirPods.
+            // Activation is deferred to SendspinKit, which activates on real playback.
             try audioSession.setCategory(.playback, mode: .default, options: [])
-            try audioSession.setActive(true)
         } catch {
             print("Failed to configure audio session: \(error)")
         }

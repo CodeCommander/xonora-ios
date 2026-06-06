@@ -240,7 +240,15 @@ public final class AudioPlayer: @unchecked Sendable {
         bufferLock.unlock()
 
         _isPlaying = false
-        // Don't deactivate session here to avoid -50 errors on immediate restart
+
+        // Explicit stop (not a transient pause): release the audio session and notify
+        // other apps so a paused podcast / music app can resume. setupAudioSession()
+        // re-activates on the next start(), so this won't cause -50 errors on restart —
+        // a fresh activation follows any later play. pause() deliberately leaves the
+        // session active so resume-after-interruption keeps working.
+        #if os(iOS)
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        #endif
     }
 
     public func setVolume(_ volume: Float) {
