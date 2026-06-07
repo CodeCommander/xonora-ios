@@ -99,9 +99,36 @@ final class LiveActivityController {
         let state = makeState(track: track, manager: manager)
 
         if activity == nil {
+            // We hold no activity in memory, but ActivityKit activities outlive the app
+            // (a rebuild / relaunch doesn't end them). Adopt one that's already running
+            // for this player instead of starting a duplicate, and end any strays —
+            // otherwise every relaunch orphans the old card and stacks a new one.
+            if #available(iOS 16.2, *) {
+                adoptOrEndExistingActivities(currentPlayerId: player.playerId)
+            }
+        }
+
+        if activity == nil {
             startActivity(state: state, player: player)
         } else {
             updateActivity(state: state)
+        }
+    }
+
+    /// Reconnects to a Live Activity left running from a previous app launch: adopts the
+    /// one matching the current player (so reconcile updates it in place) and ends every
+    /// other one, so we never stack duplicate cards for the same speaker.
+    @available(iOS 16.2, *)
+    private func adoptOrEndExistingActivities(currentPlayerId: String) {
+        for existing in Activity<XonoraLiveActivityAttributes>.activities {
+            if activity == nil && existing.attributes.playerId == currentPlayerId {
+                activity = existing
+                lastPushedState = existing.content.state
+                print("[LiveActivity] Adopted running activity for '\(existing.attributes.playerName)'")
+            } else {
+                print("[LiveActivity] Ending stray activity for '\(existing.attributes.playerName)'")
+                Task { await existing.end(existing.content, dismissalPolicy: .immediate) }
+            }
         }
     }
 
