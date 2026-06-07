@@ -136,21 +136,29 @@ struct NowPlayingView: View {
     }
 
     private var albumArtwork: some View {
-        AsyncImage(url: trackImageURL) { phase in
-            switch phase {
-            case .success(let image):
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-            case .failure:
-                artworkPlaceholder
-            case .empty:
-                artworkPlaceholder
-                    .overlay {
-                        ProgressView()
-                            .tint(.white)
+        Group {
+            if let url = trackImageURL {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                    case .failure:
+                        artworkPlaceholder
+                    case .empty:
+                        // Genuinely loading (a URL exists) — show the spinner.
+                        artworkPlaceholder
+                            .overlay {
+                                ProgressView()
+                                    .tint(.white)
+                            }
+                    @unknown default:
+                        artworkPlaceholder
                     }
-            @unknown default:
+                }
+            } else {
+                // No artwork to load — just the placeholder, never a stuck spinner.
                 artworkPlaceholder
             }
         }

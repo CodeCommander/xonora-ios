@@ -76,8 +76,8 @@ extension Track {
     /// is the reliable now-playing signal for remote and synced-group playback, where
     /// the app holds no local queue.
     init(from media: CurrentMedia, provider: String) {
-        let images: [MediaItemImage]? = media.imageUrlResolved.map {
-            [MediaItemImage(type: "thumb", path: $0, provider: provider)]
+        let images: [MediaItemImage]? = media.imageUrlResolved.flatMap { path in
+            path.isEmpty ? nil : [MediaItemImage(type: "thumb", path: path, provider: provider)]
         }
         self.init(
             itemId: media.uri ?? media.title ?? UUID().uuidString,
