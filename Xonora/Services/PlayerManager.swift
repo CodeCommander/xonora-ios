@@ -811,7 +811,11 @@ class PlayerManager: ObservableObject {
                     print("[PlayerManager] Loaded \(tracks.count) tracks from server queue")
                     self.queue = tracks
                     self.currentIndex = min(state.currentIndex, tracks.count - 1)
-                    self.currentTime = state.elapsedTime
+                    // Prefer the player's live position: the queue's get_queue elapsed
+                    // comes back 0 for some providers/synced groups (same class of issue
+                    // as the playback state), which would restart the timer from 0 on
+                    // reattach even though the speaker is mid-track.
+                    self.currentTime = player.currentMedia?.position ?? state.elapsedTime
 
                     // Set current track from queue
                     if self.currentIndex < tracks.count {
