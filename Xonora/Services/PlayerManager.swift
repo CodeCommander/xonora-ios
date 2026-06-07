@@ -411,7 +411,23 @@ class PlayerManager: ObservableObject {
         clearNowPlayingInfo()
     }
 
+    /// True when the selected player outputs audio elsewhere (Mode R) rather than on the
+    /// phone (Mode P / Sendspin). Remote transport must go through the server so MA
+    /// advances its own queue; the local-queue path only fits phone-as-output.
+    private var isRemotePlayer: Bool {
+        let provider = XonoraClient.shared.currentPlayer?.provider
+        return provider != nil && provider != "sendspin"
+    }
+
     func next() {
+        // Remote player: let MA advance its own queue. The local-queue path below is for
+        // phone-as-output only — on a remote speaker it would replay a stale local queue
+        // (and fail with "Not connected" when the phone isn't the audio output).
+        if isRemotePlayer {
+            Task { try? await XonoraClient.shared.next() }
+            return
+        }
+
         guard !queue.isEmpty else { return }
 
         // Always advance sequentially. Shuffle is handled by reordering the queue itself.
@@ -425,6 +441,12 @@ class PlayerManager: ObservableObject {
         // If we are more than 3 seconds into the track, restart it
         if currentTime > 3 {
             seek(to: 0)
+            return
+        }
+
+        // Remote player: let MA step its own queue (see `next()`).
+        if isRemotePlayer {
+            Task { try? await XonoraClient.shared.previous() }
             return
         }
 
@@ -443,7 +465,8 @@ class PlayerManager: ObservableObject {
     }
 
     func seek(to time: TimeInterval) {
-        if SendspinClient.shared.isConnected {
+        // Send the server seek for remote players (Mode R) as well as phone-output.
+        if isRemotePlayer || SendspinClient.shared.isConnected {
             Task { try? await XonoraClient.shared.seek(position: time) }
         }
         currentTime = time
@@ -829,6 +852,55 @@ class PlayerManager: ObservableObject {
         } catch {
             print("[PlayerManager] Failed to fetch queue: \(error)")
         }
+    }
+
+    /// Mirror a REMOTE player's server-reported `current_media` + `playback_state` into
+    /// the now-playing surfaces (Mode R). This is the reliable live signal for remote and
+    /// synced-group playback: the app holds no local queue, and a synced member's own
+    /// queue is empty (the queue lives on the group leader), but every `players/all` poll
+    /// reports each player's current media and state. Called from `XonoraClient.fetchPlayers`,
+    /// which the app runs on MA `player_updated` events, on (re)connect, and on foreground.
+    func reflectRemoteNowPlaying(from player: MAPlayer) {
+        // Mode P (phone-as-output) drives playback locally — leave it alone.
+        guard player.provider != "sendspin" else { return }
+        // Don't fight an in-flight user action / player transfer.
+        guard !isTransferringPlayback, !isUserInitiatedPlay else { return }
+
+        let isActive = player.state == .playing || player.state == .paused
+        guard isActive,
+              let media = player.currentMedia,
+              media.title?.isEmpty == false,
+              let uri = media.uri else {
+            // Remote player isn't actively playing anything — clear a stale card so we
+            // don't leave the previous track frozen on the lock screen / Live Activity.
+            if currentTrack != nil {
+                queue = []
+                currentTrack = nil
+                currentTime = 0
+                duration = 0
+                playbackState = .stopped
+                stopProgressTimer()
+                clearNowPlayingInfo()
+            }
+            return
+        }
+
+        if currentTrack?.uri != uri {
+            currentTrack = Track(from: media, provider: player.provider)
+            lastTrackId = nil  // force artwork reload for the new track
+        }
+        if let duration = media.duration { self.duration = duration }
+        if let position = media.position { self.currentTime = position }
+
+        if player.state == .playing {
+            playbackState = .playing
+            startProgressTimer()
+        } else {
+            playbackState = .paused
+            stopProgressTimer()
+        }
+
+        updateNowPlayingInfo()
     }
 
     // MARK: - Queue Management

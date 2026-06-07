@@ -78,6 +78,13 @@ struct XonoraApp: App {
                     Task {
                         await XonoraClient.shared.fetchPlayers()
                     }
+                } else if !playerViewModel.serverURL.isEmpty {
+                    // The MA socket is commonly torn down while the app is suspended and
+                    // doesn't come back on its own. Reconnect with saved credentials; the
+                    // connect flow re-fetches players (and mirrors remote now-playing) once
+                    // it's back up, so the card / Live Activity resync to live state.
+                    print("[XonoraApp] Not connected on foreground — reconnecting…")
+                    playerViewModel.connectToServer()
                 }
             } else if newPhase == .background {
                 // Dismiss keyboard when going to background to prevent snapshotting errors

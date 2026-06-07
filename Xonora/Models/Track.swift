@@ -69,6 +69,35 @@ struct Track: Identifiable, Codable, Hashable {
     }
 }
 
+extension Track {
+    /// Builds a display-only Track from a remote player's reported `current_media`
+    /// (Mode R). Only the fields the now-playing surfaces read are populated; queue
+    /// metadata (track/disc numbers, provider mappings, favorite) is left empty. This
+    /// is the reliable now-playing signal for remote and synced-group playback, where
+    /// the app holds no local queue.
+    init(from media: CurrentMedia, provider: String) {
+        let images: [MediaItemImage]? = media.imageUrlResolved.map {
+            [MediaItemImage(type: "thumb", path: $0, provider: provider)]
+        }
+        self.init(
+            itemId: media.uri ?? media.title ?? UUID().uuidString,
+            provider: provider,
+            name: media.title ?? "",
+            version: nil,
+            mediaType: nil,
+            duration: media.duration,
+            trackNumber: nil,
+            discNumber: nil,
+            uri: media.uri ?? "",
+            artists: media.artist.map { [ArtistReference(itemId: nil, provider: nil, name: $0)] },
+            album: media.album.map { AlbumReference(itemId: "", provider: provider, name: $0, metadata: nil) },
+            metadata: images.map { MediaItemMetadata(images: $0) },
+            providerMappings: nil,
+            favorite: nil
+        )
+    }
+}
+
 struct MediaItemMetadata: Codable, Hashable {
     let images: [MediaItemImage]?
 }

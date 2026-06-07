@@ -400,6 +400,13 @@ class XonoraClient: NSObject, ObservableObject {
                         currentPlayer = first
                     }
                 }
+
+                // Mode R: mirror the selected remote player's reported media/state into
+                // the now-playing surfaces so the card + Live Activity stay live — including
+                // synced groups, where there's no local queue to drive updates.
+                if let player = currentPlayer, player.provider != "sendspin" {
+                    PlayerManager.shared.reflectRemoteNowPlaying(from: player)
+                }
             }
         } catch {}
     }
