@@ -13,8 +13,16 @@ enum ConnectionState: Equatable {
 class XonoraClient: NSObject, ObservableObject {
     @Published var connectionState: ConnectionState = .disconnected
     @Published var players: [MAPlayer] = []
+    /// UserDefaults key for the last active player, so the app can reattach to the
+    /// previous session's speaker on launch.
+    private static let lastPlayerIDKey = "MusicAssistantLastPlayerID"
     @Published var currentPlayer: MAPlayer? {
         didSet {
+            // Remember the active player across launches. Non-nil only, so temporarily
+            // clearing the selection (e.g. a player going unavailable) doesn't wipe it.
+            if let id = currentPlayer?.playerId, id != oldValue?.playerId {
+                UserDefaults.standard.set(id, forKey: Self.lastPlayerIDKey)
+            }
             if let old = oldValue, let new = currentPlayer {
                 if old.playerId != new.playerId {
                     print("[XonoraClient] Player changed: '\(old.name)' -> '\(new.name)' (id: \(new.playerId))")
@@ -391,8 +399,13 @@ class XonoraClient: NSObject, ObservableObject {
 
                 // Only auto-select if user hasn't manually selected a player
                 if !userSelectedPlayer && currentPlayer == nil {
-                    let sendspinPlayer = players.first(where: { $0.available && $0.provider == "sendspin" && !$0.name.contains("Web") })
-                    if let best = sendspinPlayer {
+                    if let savedId = UserDefaults.standard.string(forKey: Self.lastPlayerIDKey),
+                       let remembered = players.first(where: { $0.available && $0.playerId == savedId }) {
+                        // Reattach to the previous session's speaker when it's back.
+                        print("[XonoraClient] Reattaching to last-session player: '\(remembered.name)'")
+                        currentPlayer = remembered
+                        userSelectedPlayer = true
+                    } else if let best = players.first(where: { $0.available && $0.provider == "sendspin" && !$0.name.contains("Web") }) {
                         print("[XonoraClient] Auto-selecting Sendspin player: '\(best.name)'")
                         currentPlayer = best
                     } else if let first = players.first(where: { $0.available }) {
