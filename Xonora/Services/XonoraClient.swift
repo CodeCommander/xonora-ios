@@ -401,10 +401,12 @@ class XonoraClient: NSObject, ObservableObject {
                 if !userSelectedPlayer && currentPlayer == nil {
                     if let savedId = UserDefaults.standard.string(forKey: Self.lastPlayerIDKey),
                        let remembered = players.first(where: { $0.available && $0.playerId == savedId }) {
-                        // Reattach to the previous session's speaker when it's back.
+                        // Reattach to the previous session's speaker exactly like a manual
+                        // tap, so the queue and mini-player populate right away. selectPlayer
+                        // sets currentPlayer + userSelectedPlayer and pulls the full queue +
+                        // now-playing; the current_media reflection below only sets the track.
                         print("[XonoraClient] Reattaching to last-session player: '\(remembered.name)'")
-                        currentPlayer = remembered
-                        userSelectedPlayer = true
+                        PlayerManager.shared.selectPlayer(remembered)
                     } else if let best = players.first(where: { $0.available && $0.provider == "sendspin" && !$0.name.contains("Web") }) {
                         print("[XonoraClient] Auto-selecting Sendspin player: '\(best.name)'")
                         currentPlayer = best
