@@ -44,8 +44,7 @@ struct XonoraLiveActivity: Widget {
                     VStack(spacing: 8) {
                         ProgressBar(state: state)
                         ControlsRow(playerId: context.attributes.playerId,
-                                    isPlaying: state.isPlaying,
-                                    spacing: 28)
+                                    isPlaying: state.isPlaying)
                     }
                 }
             } compactLeading: {
@@ -71,35 +70,38 @@ private struct LockScreenView: View {
     private var state: XonoraLiveActivityAttributes.ContentState { context.state }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            ArtworkView(fileName: state.artworkFileName, size: 56)
+        VStack(spacing: 10) {
+            // Track header: artwork + title/artist + the speaker it's playing on,
+            // mirroring the native Now Playing card's top block.
+            HStack(spacing: 12) {
+                ArtworkView(fileName: state.artworkFileName, size: 60)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(state.title)
-                    .font(.headline)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(state.title)
+                        .font(.headline)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
 
-                Text(state.artist)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    Text(state.artist)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
 
-                Text("Playing on \(context.attributes.playerName)")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    // Output route, like the AirPlay device line on the native card.
+                    Label(context.attributes.playerName, systemImage: "hifispeaker.fill")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .padding(.top, 1)
+                }
 
-                ProgressBar(state: state)
-                    .padding(.top, 2)
+                Spacer(minLength: 0)
             }
 
-            Spacer(minLength: 0)
-        }
-        .overlay(alignment: .bottomTrailing) {
+            ProgressBar(state: state)
+
             ControlsRow(playerId: context.attributes.playerId,
-                        isPlaying: state.isPlaying,
-                        spacing: 22)
+                        isPlaying: state.isPlaying)
         }
         .padding(14)
     }
@@ -177,22 +179,30 @@ private struct LiveBadge: View {
 private struct ControlsRow: View {
     let playerId: String
     let isPlaying: Bool
-    var spacing: CGFloat = 24
 
     var body: some View {
-        HStack(spacing: spacing) {
+        // Evenly spread across the width with a dominant play/pause, matching the
+        // native transport row.
+        HStack(spacing: 0) {
+            Spacer(minLength: 0)
             Button(intent: PreviousTrackIntent(playerId: playerId)) {
                 Image(systemName: "backward.fill")
+                    .font(.system(size: 22, weight: .semibold))
             }
+            Spacer(minLength: 0)
             Button(intent: TogglePlayPauseIntent(playerId: playerId)) {
                 Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                    .font(.system(size: 30, weight: .semibold))
+                    .frame(width: 34)  // stable width across the play/pause glyphs
             }
+            Spacer(minLength: 0)
             Button(intent: NextTrackIntent(playerId: playerId)) {
                 Image(systemName: "forward.fill")
+                    .font(.system(size: 22, weight: .semibold))
             }
+            Spacer(minLength: 0)
         }
         .buttonStyle(.plain)
-        .font(.system(size: 18, weight: .semibold))
         .foregroundStyle(.primary)
     }
 }
