@@ -810,16 +810,27 @@ class PlayerManager: ObservableObject {
                 } else {
                     print("[PlayerManager] Loaded \(tracks.count) tracks from server queue")
                     self.queue = tracks
-                    self.currentIndex = min(state.currentIndex, tracks.count - 1)
-                    // Prefer the player's live position: the queue's get_queue elapsed
-                    // comes back 0 for some providers/synced groups (same class of issue
-                    // as the playback state), which would restart the timer from 0 on
-                    // reattach even though the speaker is mid-track.
-                    self.currentTime = player.currentMedia?.position ?? state.elapsedTime
 
-                    // Set current track from queue
-                    if self.currentIndex < tracks.count {
-                        self.currentTrack = tracks[self.currentIndex]
+                    // get_queue's current_index/elapsed are unreliable for some providers
+                    // and synced groups (no usable result → both default to 0), which would
+                    // show the first queue item at 0:00 even though the speaker is mid-album.
+                    // Derive the current track + position from the player's live current_media
+                    // instead, locating it in the fetched queue for the right index/highlight.
+                    if let media = player.currentMedia, media.title?.isEmpty == false, let uri = media.uri {
+                        if let liveIndex = tracks.firstIndex(where: { $0.uri == uri }) {
+                            self.currentIndex = liveIndex
+                            self.currentTrack = tracks[liveIndex]
+                        } else {
+                            self.currentIndex = min(state.currentIndex, max(tracks.count - 1, 0))
+                            self.currentTrack = Track(from: media, provider: player.provider)
+                        }
+                        self.currentTime = media.position ?? state.elapsedTime
+                    } else {
+                        self.currentIndex = min(state.currentIndex, tracks.count - 1)
+                        if self.currentIndex < tracks.count {
+                            self.currentTrack = tracks[self.currentIndex]
+                        }
+                        self.currentTime = state.elapsedTime
                     }
 
                     // Update playback state, and keep the progress timer + now-playing

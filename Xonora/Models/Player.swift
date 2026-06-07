@@ -67,12 +67,24 @@ struct CurrentMedia: Codable, Hashable {
     private let imageUrl: String?
     private let image: String?
     let duration: TimeInterval?
-    let position: TimeInterval?
+    /// MA reports the current media's elapsed position as `elapsed_time` (sampled at
+    /// `elapsed_time_last_updated`), NOT `position`. Decoding the wrong key left the
+    /// position perpetually nil, which restarted the timer at 0 on reattach.
+    private let elapsedTime: TimeInterval?
+    private let elapsedTimeLastUpdated: TimeInterval?
     let uri: String?
 
     /// Returns the image URL, trying both possible field names from the API
     var imageUrlResolved: String? {
         imageUrl ?? image
+    }
+
+    /// Live elapsed position, corrected for the wall-clock time since the server sampled
+    /// it, so reattaching mid-track lands at the right spot.
+    var position: TimeInterval? {
+        guard let elapsed = elapsedTime else { return nil }
+        guard let last = elapsedTimeLastUpdated else { return elapsed }
+        return elapsed + max(0, Date().timeIntervalSince1970 - last)
     }
 
     enum CodingKeys: String, CodingKey {
@@ -82,7 +94,8 @@ struct CurrentMedia: Codable, Hashable {
         case imageUrl = "image_url"
         case image
         case duration
-        case position
+        case elapsedTime = "elapsed_time"
+        case elapsedTimeLastUpdated = "elapsed_time_last_updated"
         case uri
     }
 }
